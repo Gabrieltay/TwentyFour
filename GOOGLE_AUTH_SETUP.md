@@ -42,14 +42,31 @@ This app uses Google OAuth for authentication via Supabase. Follow these steps t
 4. (Optional) Add authorized domains if needed
 5. Click **Save**
 
-## 4. Update Redirect URLs (if deploying to production)
+## 4. Configure Site URL in Supabase (IMPORTANT for Production)
 
-When you deploy your app, make sure to:
+**This step is REQUIRED for your Vercel deployment to work:**
 
-1. Add your production domain to Google OAuth's **Authorized JavaScript origins**
-2. Update the callback URL in your code if needed (it's currently set to `${window.location.origin}/auth/callback`)
+1. Go to Supabase Dashboard → Authentication → URL Configuration
+2. Update **Site URL** to your Vercel deployment URL:
+   - Example: `https://your-app.vercel.app`
+   - This tells Supabase where to redirect users after OAuth
+3. Add your Vercel URL to **Redirect URLs**:
+   - Add: `https://your-app.vercel.app/auth/callback`
+   - Keep the localhost URL for development: `http://localhost:3000/auth/callback`
+4. Click **Save**
 
-## 5. Test the Authentication
+## 5. Update Google OAuth Authorized Origins (for Production)
+
+When you deploy your app to Vercel, also update Google OAuth settings:
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Navigate to **APIs & Services** → **Credentials**
+3. Click on your OAuth 2.0 Client ID
+4. Add your Vercel URL to **Authorized JavaScript origins**:
+   - Add: `https://your-app.vercel.app`
+5. Click **Save**
+
+## 6. Test the Authentication
 
 1. Start your dev server: `pnpm dev`
 2. Go to http://localhost:3000/login
