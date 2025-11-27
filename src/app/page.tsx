@@ -105,8 +105,12 @@ export default function GamePage() {
     }, 0)
     resetCalculator()
 
-    // Scroll to top when game starts
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+    // Scroll to top when game starts (works on both mobile and desktop)
+    setTimeout(() => {
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+      document.documentElement.scrollTop = 0
+      document.body.scrollTop = 0
+    }, 100)
   }
 
   const newRound = () => {
