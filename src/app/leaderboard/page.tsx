@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Trophy, Home, Medal } from 'lucide-react'
 import Link from 'next/link'
+import Image from 'next/image'
 
 interface LeaderboardEntry {
   id: string
@@ -125,10 +126,12 @@ export default function LeaderboardPage() {
                       <div className="flex items-center gap-3 flex-1">
                         {/* Avatar */}
                         {entry.user.avatarUrl ? (
-                          <img
+                          <Image
                             src={entry.user.avatarUrl}
                             alt={entry.user.name || entry.user.email}
-                            className="w-10 h-10 rounded-full object-cover"
+                            width={40}
+                            height={40}
+                            className="rounded-full object-cover"
                           />
                         ) : (
                           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-semibold text-sm">
