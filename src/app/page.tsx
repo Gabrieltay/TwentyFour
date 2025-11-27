@@ -104,6 +104,9 @@ export default function GamePage() {
       setNextNumbers(generateNumbers())
     }, 0)
     resetCalculator()
+
+    // Scroll to top when game starts
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const newRound = () => {
@@ -340,7 +343,7 @@ export default function GamePage() {
   ]
 
   return (
-    <div className="h-screen flex flex-col bg-gradient-to-br from-blue-50 to-indigo-100 overflow-hidden">
+    <div className="min-h-screen md:h-screen flex flex-col bg-gradient-to-br from-blue-50 to-indigo-100 md:overflow-hidden">
       <Toaster position="top-center" richColors />
       {/* Header */}
       <div className="bg-white shadow-sm p-3 flex-shrink-0">
@@ -372,8 +375,8 @@ export default function GamePage() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
-        <div className="max-w-4xl mx-auto p-4 space-y-3">
+      <div className="flex-1 md:overflow-y-auto overflow-visible">
+        <div className="max-w-4xl mx-auto p-4 pb-8 space-y-3">
           {/* Stats Bar - Only show when game is started */}
           {gameStarted && (
             <div className="grid grid-cols-3 gap-4">

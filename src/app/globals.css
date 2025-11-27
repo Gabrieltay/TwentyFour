@@ -1,15 +1,28 @@
 @import 'tailwindcss';
 
-/* Allow scrolling on mobile, prevent on desktop for fixed layout */
+/* Mobile-friendly viewport height handling */
 html,
 body {
-  height: 100%;
-  overflow: auto;
+  margin: 0;
+  padding: 0;
 }
 
+/* Mobile: allow natural scrolling */
+@media (max-width: 767px) {
+  html,
+  body {
+    height: auto;
+    min-height: 100vh;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+}
+
+/* Desktop: fixed viewport */
 @media (min-width: 768px) {
   html,
   body {
+    height: 100%;
     overflow: hidden;
   }
 }
