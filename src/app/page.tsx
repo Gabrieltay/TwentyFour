@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { generateNumbers } from '@/lib/game'
@@ -22,6 +22,7 @@ export default function GamePage() {
   const [timeLeft, setTimeLeft] = useState(300) // 5 minutes = 300 seconds
   const [skipsLeft, setSkipsLeft] = useState(3)
   const [gameStarted, setGameStarted] = useState(false)
+  const topRef = useRef<HTMLDivElement>(null)
 
   // Calculator state
   const [gameState, setGameState] = useState<GameState>('first')
@@ -107,10 +108,14 @@ export default function GamePage() {
 
     // Scroll to top when game starts (works on both mobile and desktop)
     setTimeout(() => {
-      window.scrollTo({ top: 0, behavior: 'smooth' })
+      // Try multiple methods to ensure scroll works on mobile Chrome
+      if (topRef.current) {
+        topRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }
+      window.scrollTo(0, 0)
       document.documentElement.scrollTop = 0
       document.body.scrollTop = 0
-    }, 100)
+    }, 50)
   }
 
   const newRound = () => {
@@ -348,6 +353,7 @@ export default function GamePage() {
 
   return (
     <div className="min-h-screen md:h-screen flex flex-col bg-gradient-to-br from-blue-50 to-indigo-100 md:overflow-hidden">
+      <div ref={topRef} className="absolute top-0 left-0 w-0 h-0" aria-hidden="true" />
       <Toaster position="top-center" richColors />
       {/* Header */}
       <div className="bg-white shadow-sm p-3 flex-shrink-0">
