@@ -12,6 +12,7 @@ interface LeaderboardEntry {
   id: string
   score: number
   createdAt: string
+  updatedAt: string
   user: {
     email: string
   }
@@ -134,7 +135,7 @@ export default function LeaderboardPage() {
                           )}
                         </p>
                         <p className="text-sm text-gray-500">
-                          {new Date(entry.createdAt).toLocaleDateString()}
+                          Last played: {new Date(entry.updatedAt).toLocaleDateString()} {new Date(entry.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </p>
                       </div>
                     </div>

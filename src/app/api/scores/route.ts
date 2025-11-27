@@ -58,17 +58,42 @@ export async function POST(request: NextRequest) {
 
 export async function GET() {
   try {
-    const scores = await prisma.score.findMany({
-      include: {
-        user: true,
-      },
-      orderBy: {
-        score: 'desc',
-      },
-      take: 10,
-    })
+    // Get the highest score for each user using a subquery approach
+    const scores = await prisma.$queryRaw`
+      SELECT DISTINCT ON (s."userId")
+        s.id,
+        s."userId",
+        s.score,
+        s."createdAt",
+        s."updatedAt",
+        u.email
+      FROM "Score" s
+      JOIN "User" u ON s."userId" = u.id
+      ORDER BY s."userId", s.score DESC, s."updatedAt" DESC
+    ` as Array<{
+      id: string
+      userId: string
+      score: number
+      createdAt: Date
+      updatedAt: Date
+      email: string
+    }>
 
-    return NextResponse.json({ scores })
+    // Sort by score descending and take top 10
+    const topScores = scores
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 10)
+      .map(score => ({
+        id: score.id,
+        score: score.score,
+        createdAt: score.createdAt,
+        updatedAt: score.updatedAt,
+        user: {
+          email: score.email
+        }
+      }))
+
+    return NextResponse.json({ scores: topScores })
   } catch (error) {
     console.error('Error fetching scores:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

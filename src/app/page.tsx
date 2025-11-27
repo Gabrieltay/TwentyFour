@@ -14,6 +14,7 @@ type GameState = 'first' | 'second'
 export default function GamePage() {
   const [numbers, setNumbers] = useState<(number | null)[]>([null, null, null, null])
   const [originalNumbers, setOriginalNumbers] = useState<number[]>([])
+  const [nextNumbers, setNextNumbers] = useState<number[]>([]) // Pre-generated next puzzle
   const [score, setScore] = useState(0)
   const [highScore, setHighScore] = useState(0)
   const [user, setUser] = useState<any>(null)
@@ -56,9 +57,8 @@ export default function GamePage() {
 
   const checkUser = async () => {
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      router.push('/login')
-    } else {
+    // Don't redirect - let users see the landing page
+    if (user) {
       setUser(user)
     }
   }
@@ -79,19 +79,40 @@ export default function GamePage() {
   }
 
   const startGame = () => {
+    // Check if user is logged in before starting
+    if (!user) {
+      router.push('/login')
+      return
+    }
+
     setScore(0)
     setTimeLeft(300)
     setSkipsLeft(3)
     setGameStarted(true)
-    newRound()
+    // Pre-generate first puzzle and next puzzle
+    const firstPuzzle = generateNumbers()
+    setNumbers(firstPuzzle)
+    setOriginalNumbers(firstPuzzle)
+    // Pre-generate next puzzle in background
+    setTimeout(() => {
+      setNextNumbers(generateNumbers())
+    }, 0)
+    resetCalculator()
+    setMessage('')
   }
 
   const newRound = () => {
-    const newNumbers = generateNumbers()
+    // Use pre-generated numbers if available, otherwise generate new ones
+    const newNumbers = nextNumbers.length > 0 ? nextNumbers : generateNumbers()
     setNumbers(newNumbers)
     setOriginalNumbers(newNumbers)
     resetCalculator()
     setMessage('')
+
+    // Pre-generate next puzzle in background for smooth experience
+    setTimeout(() => {
+      setNextNumbers(generateNumbers())
+    }, 0)
   }
 
   const resetCalculator = () => {
@@ -149,17 +170,16 @@ export default function GamePage() {
 
           if (newScore > highScore) {
             setHighScore(newScore)
-            saveScore(newScore)
           }
 
           setTimeout(() => {
             newRound()
-          }, 1500)
+          }, 800) // Reduced from 1500ms to 800ms
         } else {
           setMessage(`❌ Result is ${result}, not 24. Try again!`)
           setTimeout(() => {
             resetRound()
-          }, 2000)
+          }, 1200) // Reduced from 2000ms to 1200ms
         }
       } else {
         // Continue with next operation
@@ -209,6 +229,8 @@ export default function GamePage() {
 
   const endGame = async () => {
     setGameStarted(false)
+
+    // Only save and update high score if it's a new record
     if (score > highScore) {
       setHighScore(score)
       await saveScore(score)
@@ -254,8 +276,6 @@ export default function GamePage() {
     return `${mins}:${secs.toString().padStart(2, '0')}`
   }
 
-  if (!user) return null
-
   const numberColors = [
     'bg-green-500 hover:bg-green-600',
     'bg-red-500 hover:bg-red-600',
@@ -264,79 +284,182 @@ export default function GamePage() {
   ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="h-screen flex flex-col bg-gradient-to-br from-blue-50 to-indigo-100 overflow-hidden">
       {/* Header */}
-      <div className="bg-white shadow-sm p-4">
+      <div className="bg-white shadow-sm p-3 flex-shrink-0">
         <div className="max-w-4xl mx-auto flex justify-between items-center">
           <h1 className="text-2xl font-bold text-gray-900">TwentyFour</h1>
           <div className="flex gap-2">
-            <Link href="/leaderboard">
-              <Button variant="outline" size="sm">
-                <BarChart3 className="h-4 w-4" />
-              </Button>
-            </Link>
-            <Button variant="outline" size="sm" onClick={handleLogout}>
-              <LogOut className="h-4 w-4" />
-            </Button>
+            {user ? (
+              <>
+                <Link href="/leaderboard">
+                  <Button variant="outline" size="sm">
+                    <BarChart3 className="h-4 w-4" />
+                  </Button>
+                </Link>
+                <Button variant="outline" size="sm" onClick={handleLogout}>
+                  <LogOut className="h-4 w-4" />
+                </Button>
+              </>
+            ) : (
+              <Link href="/login">
+                <Button size="sm" className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700">
+                  Sign In
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto p-4 space-y-4">
-        {/* Stats Bar */}
-        <div className="grid grid-cols-3 gap-4">
-          <Card className="p-4 text-center">
-            <div className="text-sm text-muted-foreground">Score</div>
-            <div className="text-3xl font-bold">{score}</div>
-          </Card>
-          <Card className="p-4 text-center">
-            <div className="text-sm text-muted-foreground flex items-center justify-center gap-1">
-              <Clock className="h-4 w-4" />
-              Time
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-4xl mx-auto p-4 space-y-3">
+        {/* Stats Bar - Only show when user is logged in */}
+        {user && (
+          <>
+            <div className="grid grid-cols-3 gap-4">
+              <Card className="p-4 text-center">
+                <div className="text-sm text-muted-foreground">Score</div>
+                <div className="text-3xl font-bold">{score}</div>
+              </Card>
+              <Card className="p-4 text-center">
+                <div className="text-sm text-muted-foreground flex items-center justify-center gap-1">
+                  <Clock className="h-4 w-4" />
+                  Time
+                </div>
+                <div className={`text-3xl font-bold ${timeLeft < 30 ? 'text-red-600' : ''}`}>
+                  {formatTime(timeLeft)}
+                </div>
+              </Card>
+              <Card className="p-4 text-center">
+                <div className="text-sm text-muted-foreground flex items-center justify-center gap-1">
+                  <Trophy className="h-4 w-4" />
+                  Best
+                </div>
+                <div className="text-3xl font-bold">{highScore}</div>
+              </Card>
             </div>
-            <div className={`text-3xl font-bold ${timeLeft < 30 ? 'text-red-600' : ''}`}>
-              {formatTime(timeLeft)}
-            </div>
-          </Card>
-          <Card className="p-4 text-center">
-            <div className="text-sm text-muted-foreground flex items-center justify-center gap-1">
-              <Trophy className="h-4 w-4" />
-              Best
-            </div>
-            <div className="text-3xl font-bold">{highScore}</div>
-          </Card>
-        </div>
 
-        {/* Skips Remaining */}
-        <div className="flex justify-center gap-2">
-          {[0, 1, 2].map((i) => (
-            <div
-              key={i}
-              className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold ${
-                i < skipsLeft ? 'bg-blue-500' : 'bg-gray-300'
-              }`}
-            >
-              {i < skipsLeft ? '✓' : ''}
+            {/* Skips Remaining */}
+            <div className="flex justify-center gap-2">
+              {[0, 1, 2].map((i) => (
+                <div
+                  key={i}
+                  className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold ${
+                    i < skipsLeft ? 'bg-blue-500' : 'bg-gray-300'
+                  }`}
+                >
+                  {i < skipsLeft ? '✓' : ''}
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          </>
+        )}
 
         {!gameStarted ? (
-          /* Start Screen */
-          <Card className="p-8 text-center space-y-4">
-            <h2 className="text-3xl font-bold">Ready to Play?</h2>
-            <p className="text-muted-foreground">
-              Make 24 using all four numbers and basic operations
-            </p>
-            <p className="text-sm text-muted-foreground">
-              • 5 minutes time limit<br />
-              • 3 skip passes<br />
-              • Tap numbers and operators in sequence
-            </p>
-            <Button onClick={startGame} size="lg" className="w-full">
-              Start Game
-            </Button>
-          </Card>
+          /* Landing Page */
+          <div className="space-y-4">
+            {/* Hero Section */}
+            <Card className="p-6 text-center space-y-4 bg-gradient-to-br from-white to-blue-50 border-2 border-blue-100 overflow-hidden relative">
+              {/* Animated background elements */}
+              <div className="absolute top-0 right-0 w-32 h-32 bg-blue-200 rounded-full blur-3xl opacity-20 animate-pulse" />
+              <div className="absolute bottom-0 left-0 w-40 h-40 bg-indigo-200 rounded-full blur-3xl opacity-20 animate-pulse" style={{ animationDelay: '1s' }} />
+
+              <div className="relative z-10 space-y-4">
+                {/* Title with animation */}
+                <div className="space-y-1">
+                  <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-100 text-blue-700 rounded-full text-sm font-semibold mb-2 animate-bounce">
+                    <Trophy className="h-4 w-4" />
+                    Challenge Your Mind
+                  </div>
+                  <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                    Twenty Four
+                  </h1>
+                  <p className="text-lg text-gray-600 font-medium">
+                    The Classic Math Puzzle Game
+                  </p>
+                </div>
+
+                {/* Animated example */}
+                <div className="bg-white rounded-xl p-4 shadow-lg max-w-md mx-auto border border-blue-100">
+                  <p className="text-sm text-gray-500 mb-2 font-semibold">Example Puzzle:</p>
+                  <div className="flex justify-center gap-2 mb-3">
+                    {[3, 3, 8, 8].map((num, i) => (
+                      <div
+                        key={i}
+                        className="w-14 h-14 bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-lg flex items-center justify-center text-xl font-bold shadow-lg transform hover:scale-110 transition-transform animate-fadeIn"
+                        style={{ animationDelay: `${i * 0.1}s` }}
+                      >
+                        {num}
+                      </div>
+                    ))}
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    <p className="font-mono bg-gray-50 p-2 rounded">8 ÷ (3 - 8 ÷ 3) = <span className="text-green-600 font-bold">24</span></p>
+                  </div>
+                </div>
+
+                {/* How to Play */}
+                <div className="space-y-3">
+                  <h3 className="text-base font-bold text-gray-900">How to Play</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 max-w-2xl mx-auto">
+                    <div className="bg-white p-3 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                        <span className="text-xl">🎯</span>
+                      </div>
+                      <h4 className="font-bold text-gray-900 mb-1 text-sm">Goal</h4>
+                      <p className="text-xs text-gray-600">Use all four numbers to make 24</p>
+                    </div>
+                    <div className="bg-white p-3 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                      <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                        <span className="text-xl">➕</span>
+                      </div>
+                      <h4 className="font-bold text-gray-900 mb-1 text-sm">Operations</h4>
+                      <p className="text-xs text-gray-600">Use +, -, ×, ÷ operations</p>
+                    </div>
+                    <div className="bg-white p-3 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                      <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                        <Clock className="h-5 w-5 text-purple-600" />
+                      </div>
+                      <h4 className="font-bold text-gray-900 mb-1 text-sm">Time Limit</h4>
+                      <p className="text-xs text-gray-600">5 minutes to score as much as you can</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Game Features */}
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-3 max-w-md mx-auto border border-blue-100">
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="flex items-center gap-2 text-gray-700">
+                      <div className="w-1.5 h-1.5 bg-blue-500 rounded-full" />
+                      <span>3 Skip Passes</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-gray-700">
+                      <div className="w-1.5 h-1.5 bg-green-500 rounded-full" />
+                      <span>Tap Interface</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-gray-700">
+                      <div className="w-1.5 h-1.5 bg-purple-500 rounded-full" />
+                      <span>Global Leaderboard</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-gray-700">
+                      <div className="w-1.5 h-1.5 bg-orange-500 rounded-full" />
+                      <span>Personal Best</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* CTA Button */}
+                <Button
+                  onClick={startGame}
+                  size="lg"
+                  className="w-full max-w-md mx-auto text-base py-5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
+                >
+                  Start Playing Now
+                </Button>
+              </div>
+            </Card>
+          </div>
         ) : (
           <>
             {/* Message */}
@@ -420,6 +543,7 @@ export default function GamePage() {
             </Button>
           </>
         )}
+        </div>
       </div>
     </div>
   )
