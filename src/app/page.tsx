@@ -285,6 +285,53 @@ export default function GamePage() {
     return `${mins}:${secs.toString().padStart(2, '0')}`
   }
 
+  const toFraction = (num: number): string => {
+    // If it's a whole number, return as is
+    if (Number.isInteger(num)) {
+      return num.toString()
+    }
+
+    // Handle negative numbers
+    const sign = num < 0 ? '-' : ''
+    const absNum = Math.abs(num)
+
+    // Find the best fraction approximation
+    const tolerance = 1.0e-6
+    let numerator = 1
+    let denominator = 1
+
+    let bestNumerator = Math.round(absNum)
+    let bestDenominator = 1
+    let bestError = Math.abs(absNum - bestNumerator)
+
+    // Try denominators up to 100
+    for (let d = 2; d <= 100; d++) {
+      const n = Math.round(absNum * d)
+      const value = n / d
+      const error = Math.abs(absNum - value)
+
+      if (error < bestError) {
+        bestNumerator = n
+        bestDenominator = d
+        bestError = error
+
+        if (error < tolerance) break
+      }
+    }
+
+    // Simplify the fraction
+    const gcd = (a: number, b: number): number => (b === 0 ? a : gcd(b, a % b))
+    const divisor = gcd(bestNumerator, bestDenominator)
+    numerator = bestNumerator / divisor
+    denominator = bestDenominator / divisor
+
+    if (denominator === 1) {
+      return sign + numerator.toString()
+    }
+
+    return `${sign}${numerator}/${denominator}`
+  }
+
   const numberColors = [
     'bg-green-500 hover:bg-green-600',
     'bg-red-500 hover:bg-red-600',
@@ -327,46 +374,30 @@ export default function GamePage() {
 
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-4xl mx-auto p-4 space-y-3">
-          {/* Stats Bar - Only show when user is logged in */}
-          {user && (
-            <>
-              <div className="grid grid-cols-3 gap-4">
-                <Card className="p-4 text-center">
-                  <div className="text-sm text-muted-foreground">Score</div>
-                  <div className="text-3xl font-bold">{score}</div>
-                </Card>
-                <Card className="p-4 text-center">
-                  <div className="text-sm text-muted-foreground flex items-center justify-center gap-1">
-                    <Clock className="h-4 w-4" />
-                    Time
-                  </div>
-                  <div className={`text-3xl font-bold ${timeLeft < 30 ? 'text-red-600' : ''}`}>
-                    {formatTime(timeLeft)}
-                  </div>
-                </Card>
-                <Card className="p-4 text-center">
-                  <div className="text-sm text-muted-foreground flex items-center justify-center gap-1">
-                    <Trophy className="h-4 w-4" />
-                    Best
-                  </div>
-                  <div className="text-3xl font-bold">{highScore}</div>
-                </Card>
-              </div>
-
-              {/* Skips Remaining */}
-              <div className="flex justify-center gap-2">
-                {[0, 1, 2].map(i => (
-                  <div
-                    key={i}
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold ${
-                      i < skipsLeft ? 'bg-blue-500' : 'bg-gray-300'
-                    }`}
-                  >
-                    {i < skipsLeft ? '✓' : ''}
-                  </div>
-                ))}
-              </div>
-            </>
+          {/* Stats Bar - Only show when game is started */}
+          {gameStarted && (
+            <div className="grid grid-cols-3 gap-4">
+              <Card className="p-4 text-center">
+                <div className="text-sm text-muted-foreground">Score</div>
+                <div className="text-3xl font-bold">{score}</div>
+              </Card>
+              <Card className="p-4 text-center">
+                <div className="text-sm text-muted-foreground flex items-center justify-center gap-1">
+                  <Clock className="h-4 w-4" />
+                  Time
+                </div>
+                <div className={`text-3xl font-bold ${timeLeft < 30 ? 'text-red-600' : ''}`}>
+                  {formatTime(timeLeft)}
+                </div>
+              </Card>
+              <Card className="p-4 text-center">
+                <div className="text-sm text-muted-foreground flex items-center justify-center gap-1">
+                  <Trophy className="h-4 w-4" />
+                  Best
+                </div>
+                <div className="text-3xl font-bold">{highScore}</div>
+              </Card>
+            </div>
           )}
 
           {!gameStarted ? (
@@ -400,7 +431,7 @@ export default function GamePage() {
                   <div className="bg-white rounded-xl p-4 shadow-lg max-w-md mx-auto border border-blue-100">
                     <p className="text-sm text-gray-500 mb-2 font-semibold">Example Puzzle:</p>
                     <div className="flex justify-center gap-2 mb-3">
-                      {[3, 3, 8, 8].map((num, i) => (
+                      {[6, 6, 3, 1].map((num, i) => (
                         <div
                           key={i}
                           className="w-14 h-14 bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-lg flex items-center justify-center text-xl font-bold shadow-lg transform hover:scale-110 transition-transform animate-fadeIn"
@@ -412,7 +443,7 @@ export default function GamePage() {
                     </div>
                     <div className="text-sm text-gray-600">
                       <p className="font-mono bg-gray-50 p-2 rounded">
-                        8 ÷ (3 - 8 ÷ 3) = <span className="text-green-600 font-bold">24</span>
+                        (6 - 3) × (6 + 1) = <span className="text-green-600 font-bold">24</span>
                       </p>
                     </div>
                   </div>
@@ -490,16 +521,23 @@ export default function GamePage() {
                     onClick={() => handleNumberClick(index)}
                     disabled={num === null}
                     className={`
-                    h-32 rounded-xl text-white text-6xl font-bold
+                    h-32 rounded-xl text-white font-bold
                     transition-all duration-200 shadow-lg
                     ${num === null ? 'invisible' : ''}
                     ${numberColors[index]}
                     ${selectedIndex === index ? 'ring-4 ring-white scale-95' : ''}
                     ${num !== null ? 'active:scale-95' : ''}
                     disabled:opacity-0 disabled:cursor-not-allowed
+                    flex items-center justify-center
                   `}
                   >
-                    {num !== null ? num : ''}
+                    {num !== null ? (
+                      <span className={Number.isInteger(num) ? 'text-6xl' : 'text-4xl'}>
+                        {toFraction(num)}
+                      </span>
+                    ) : (
+                      ''
+                    )}
                   </button>
                 ))}
               </div>
@@ -528,9 +566,21 @@ export default function GamePage() {
                   disabled={skipsLeft === 0}
                   variant="outline"
                   size="lg"
-                  className="h-14"
+                  className="h-14 flex items-center gap-2"
                 >
-                  Skip ({skipsLeft} left)
+                  <span>Skip</span>
+                  <div className="flex gap-1">
+                    {[0, 1, 2].map(i => (
+                      <div
+                        key={i}
+                        className={`w-5 h-5 rounded-full flex items-center justify-center text-white text-xs font-bold ${
+                          i < skipsLeft ? 'bg-blue-500' : 'bg-gray-300'
+                        }`}
+                      >
+                        {i < skipsLeft ? '✓' : ''}
+                      </div>
+                    ))}
+                  </div>
                 </Button>
                 <Button onClick={resetRound} variant="outline" size="lg" className="h-14">
                   Reset

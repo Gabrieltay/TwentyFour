@@ -1,5 +1,12 @@
 @import 'tailwindcss';
 
+/* Prevent vertical scrolling */
+html,
+body {
+  overflow: hidden;
+  height: 100%;
+}
+
 @theme {
   --color-background: oklch(100% 0 0);
   --color-foreground: oklch(9% 0 0);
