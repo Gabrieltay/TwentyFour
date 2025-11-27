@@ -3,6 +3,7 @@
 ## The Problem
 
 After deploying to Vercel and logging in with Google, you're being redirected to:
+
 ```
 http://localhost:3000/?code=xxxxx
 ```
@@ -18,16 +19,20 @@ You need to update **TWO** places:
 1. Go to: https://supabase.com/dashboard/project/hipbwejveviqglbrtdbv
 2. Click **Authentication** → **URL Configuration**
 3. Update **Site URL** to your Vercel deployment URL:
+
    ```
    https://your-app-name.vercel.app
    ```
+
    (Replace `your-app-name` with your actual Vercel app name)
 
 4. In **Redirect URLs**, add:
+
    ```
    https://your-app-name.vercel.app/auth/callback
    http://localhost:3000/auth/callback
    ```
+
    Keep both URLs so it works in development AND production
 
 5. Click **Save**
@@ -55,11 +60,13 @@ You need to update **TWO** places:
 ### Check Environment Variables in Vercel
 
 Make sure these are set in Vercel:
+
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `DATABASE_URL`
 
 To check/update:
+
 1. Go to your Vercel project dashboard
 2. Click **Settings** → **Environment Variables**
 3. Verify all three variables are set correctly
@@ -68,6 +75,7 @@ To check/update:
 ### Verify the Redirect URL
 
 Your Supabase redirect URL in the Google provider settings should be:
+
 ```
 https://hipbwejveviqglbrtdbv.supabase.co/auth/v1/callback
 ```

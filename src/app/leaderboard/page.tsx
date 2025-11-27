@@ -15,6 +15,8 @@ interface LeaderboardEntry {
   updatedAt: string
   user: {
     email: string
+    name: string | null
+    avatarUrl: string | null
   }
 }
 
@@ -28,10 +30,13 @@ export default function LeaderboardPage() {
   useEffect(() => {
     checkUser()
     loadScores()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const checkUser = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
     if (!user) {
       router.push('/login')
     } else {
@@ -91,15 +96,11 @@ export default function LeaderboardPage() {
               <Trophy className="h-6 w-6 text-yellow-500" />
               Top Scores
             </CardTitle>
-            <CardDescription>
-              The highest scores achieved by players
-            </CardDescription>
+            <CardDescription>The highest scores achieved by players</CardDescription>
           </CardHeader>
           <CardContent>
             {loading ? (
-              <div className="text-center py-8 text-muted-foreground">
-                Loading scores...
-              </div>
+              <div className="text-center py-8 text-muted-foreground">Loading scores...</div>
             ) : scores.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 No scores yet. Be the first to set a record!
@@ -118,31 +119,47 @@ export default function LeaderboardPage() {
                     <div className="flex items-center gap-4 flex-1">
                       <div className="flex items-center justify-center w-10">
                         {getMedalIcon(index + 1) || (
-                          <span className="text-lg font-semibold text-gray-600">
-                            #{index + 1}
-                          </span>
+                          <span className="text-lg font-semibold text-gray-600">#{index + 1}</span>
                         )}
                       </div>
-                      <div className="flex-1">
-                        <p className={`font-medium ${
-                          entry.user.email === user?.email ? 'text-blue-900' : 'text-gray-900'
-                        }`}>
-                          {entry.user.email}
-                          {entry.user.email === user?.email && (
-                            <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
-                              You
-                            </span>
-                          )}
-                        </p>
-                        <p className="text-sm text-gray-500">
-                          Last played: {new Date(entry.updatedAt).toLocaleDateString()} {new Date(entry.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </p>
+                      <div className="flex items-center gap-3 flex-1">
+                        {/* Avatar */}
+                        {entry.user.avatarUrl ? (
+                          <img
+                            src={entry.user.avatarUrl}
+                            alt={entry.user.name || entry.user.email}
+                            className="w-10 h-10 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-semibold text-sm">
+                            {(entry.user.name || entry.user.email).charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                        <div className="flex-1">
+                          <p
+                            className={`font-medium ${
+                              entry.user.email === user?.email ? 'text-blue-900' : 'text-gray-900'
+                            }`}
+                          >
+                            {entry.user.name || entry.user.email}
+                            {entry.user.email === user?.email && (
+                              <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+                                You
+                              </span>
+                            )}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            Last played: {new Date(entry.updatedAt).toLocaleDateString()}{' '}
+                            {new Date(entry.updatedAt).toLocaleTimeString([], {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                          </p>
+                        </div>
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-2xl font-bold text-gray-900">
-                        {entry.score}
-                      </p>
+                      <p className="text-2xl font-bold text-gray-900">{entry.score}</p>
                       <p className="text-xs text-gray-500">points</p>
                     </div>
                   </div>

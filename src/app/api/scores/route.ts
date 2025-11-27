@@ -6,7 +6,9 @@ export async function POST(request: NextRequest) {
   try {
     console.log('POST /api/scores - Starting...')
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
 
     console.log('User from Supabase:', user?.id, user?.email)
 
@@ -23,12 +25,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid score' }, { status: 400 })
     }
 
-    // Create or update user in database
+    // Create or update user in database with metadata from Supabase
     console.log('Upserting user in database...')
     const dbUser = await prisma.user.upsert({
       where: { id: user.id },
-      update: { email: user.email! },
-      create: { id: user.id, email: user.email! },
+      update: {
+        email: user.email!,
+        name: user.user_metadata?.full_name || user.user_metadata?.name || null,
+        avatarUrl: user.user_metadata?.avatar_url || user.user_metadata?.picture || null,
+      },
+      create: {
+        id: user.id,
+        email: user.email!,
+        name: user.user_metadata?.full_name || user.user_metadata?.name || null,
+        avatarUrl: user.user_metadata?.avatar_url || user.user_metadata?.picture || null,
+      },
     })
     console.log('User upserted:', dbUser.id)
 
@@ -49,34 +60,41 @@ export async function POST(request: NextRequest) {
       console.error('Error message:', error.message)
       console.error('Error stack:', error.stack)
     }
-    return NextResponse.json({
-      error: 'Internal server error',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 })
+    return NextResponse.json(
+      {
+        error: 'Internal server error',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
+      { status: 500 }
+    )
   }
 }
 
 export async function GET() {
   try {
     // Get the highest score for each user using a subquery approach
-    const scores = await prisma.$queryRaw`
+    const scores = (await prisma.$queryRaw`
       SELECT DISTINCT ON (s."userId")
         s.id,
         s."userId",
         s.score,
         s."createdAt",
         s."updatedAt",
-        u.email
+        u.email,
+        u.name,
+        u."avatarUrl"
       FROM "Score" s
       JOIN "User" u ON s."userId" = u.id
       ORDER BY s."userId", s.score DESC, s."updatedAt" DESC
-    ` as Array<{
+    `) as Array<{
       id: string
       userId: string
       score: number
       createdAt: Date
       updatedAt: Date
       email: string
+      name: string | null
+      avatarUrl: string | null
     }>
 
     // Sort by score descending and take top 10
@@ -89,8 +107,10 @@ export async function GET() {
         createdAt: score.createdAt,
         updatedAt: score.updatedAt,
         user: {
-          email: score.email
-        }
+          email: score.email,
+          name: score.name,
+          avatarUrl: score.avatarUrl,
+        },
       }))
 
     return NextResponse.json({ scores: topScores })

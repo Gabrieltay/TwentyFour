@@ -29,7 +29,10 @@ export function generateNumbers(): number[] {
 }
 
 // Validate if the expression evaluates to 24
-export function validateExpression(expression: string, numbers: number[]): {
+export function validateExpression(
+  expression: string,
+  numbers: number[]
+): {
   isValid: boolean
   message: string
 } {
@@ -60,7 +63,7 @@ export function validateExpression(expression: string, numbers: number[]): {
     }
 
     // Validate that expression only contains numbers, operators, and parentheses
-    const validPattern = /^[\d\+\-\*\/\(\)\s]+$/
+    const validPattern = /^[\d+\-*/() \s]+$/
     if (!validPattern.test(cleanExpression)) {
       return {
         isValid: false,
@@ -84,7 +87,7 @@ export function validateExpression(expression: string, numbers: number[]): {
         message: `Expression equals ${result}, not 24`,
       }
     }
-  } catch (error) {
+  } catch {
     return {
       isValid: false,
       message: 'Invalid expression. Please check your syntax.',

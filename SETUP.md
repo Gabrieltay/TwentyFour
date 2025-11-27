@@ -17,12 +17,14 @@ pnpm install
 ## 3. Get Supabase Credentials
 
 ### API Keys (for authentication)
+
 1. Go to **Project Settings** → **API**
 2. Copy the following:
    - **Project URL** (looks like: `https://xxxxx.supabase.co`)
    - **anon/public key** (starts with `eyJ...`)
 
 ### Database Connection String (for Prisma)
+
 1. Go to **Project Settings** → **Database**
 2. Scroll to **Connection string** section
 3. Select **URI** tab
@@ -59,19 +61,24 @@ Open [http://localhost:3000](http://localhost:3000) and you should see the login
 ## Troubleshooting
 
 ### "Invalid Prisma Client" error
+
 Run: `pnpm prisma generate`
 
 ### Authentication not working
+
 - Check that your Supabase URL and keys are correct in `.env.local`
 - Make sure you're using the **anon/public** key, not the service role key
 
 ### Database connection errors
+
 - Verify your DATABASE_URL is correct
 - Make sure you replaced `[YOUR-PASSWORD]` with your actual password
 - Check that your Supabase project is running
 
 ### Build errors
+
 Try deleting these folders and reinstalling:
+
 ```bash
 rm -rf node_modules .next
 pnpm install

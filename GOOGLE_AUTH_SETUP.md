@@ -77,14 +77,17 @@ When you deploy your app to Vercel, also update Google OAuth settings:
 ## Troubleshooting
 
 ### "redirect_uri_mismatch" error
+
 - Make sure the redirect URI in Google Console matches exactly what Supabase provides
 - The URI should be: `https://[YOUR-PROJECT-REF].supabase.co/auth/v1/callback`
 
 ### "Access blocked" error
+
 - Make sure you've published your OAuth consent screen in Google Console
 - Or add your test email to the test users list
 
 ### User not redirecting after login
+
 - Check that `/auth/callback` route is working
 - Check browser console for errors
 - Verify your Supabase credentials in `.env` file
@@ -92,6 +95,7 @@ When you deploy your app to Vercel, also update Google OAuth settings:
 ## Database Sync
 
 The User table in your database will automatically sync with Google OAuth users:
+
 - User ID will be their Supabase Auth ID (UUID)
 - Email will be populated from their Google account
 - First time users are automatically created in the database via the API

@@ -15,7 +15,7 @@ export async function updateSession(request: NextRequest) {
           return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value))
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
           supabaseResponse = NextResponse.next({
             request,
           })
@@ -37,8 +37,8 @@ export async function updateSession(request: NextRequest) {
 
   // Allow unauthenticated access to home page, login, and auth callback
   const publicPaths = ['/', '/login', '/signup', '/auth']
-  const isPublicPath = publicPaths.some(path =>
-    request.nextUrl.pathname === path || request.nextUrl.pathname.startsWith(path + '/')
+  const isPublicPath = publicPaths.some(
+    path => request.nextUrl.pathname === path || request.nextUrl.pathname.startsWith(path + '/')
   )
 
   if (!user && !isPublicPath) {

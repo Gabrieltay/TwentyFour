@@ -1,19 +1,24 @@
 # Landing Page & Authentication Flow
 
 ## Overview
+
 Updated the app to show a beautiful landing page to all visitors (authenticated or not), with a clear sign-in flow.
 
 ## Changes Made
 
 ### 1. Removed Auto-Redirect to Login
+
 **File: [src/app/page.tsx](src/app/page.tsx#L58-L64)**
 
 **Before:**
+
 ```typescript
 const checkUser = async () => {
-  const { data: { user } } = await supabase.auth.getUser()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
   if (!user) {
-    router.push('/login')  // ❌ Auto-redirected
+    router.push('/login') // ❌ Auto-redirected
   } else {
     setUser(user)
   }
@@ -21,9 +26,12 @@ const checkUser = async () => {
 ```
 
 **After:**
+
 ```typescript
 const checkUser = async () => {
-  const { data: { user } } = await supabase.auth.getUser()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
   // Don't redirect - let users see the landing page
   if (user) {
     setUser(user)
@@ -34,6 +42,7 @@ const checkUser = async () => {
 **Result:** Users can now see the landing page without being logged in
 
 ### 2. Added Login Requirement to Start Game
+
 **File: [src/app/page.tsx](src/app/page.tsx#L81-L86)**
 
 ```typescript
@@ -50,13 +59,16 @@ const startGame = () => {
 **Result:** When users click "Start Playing Now", they're redirected to login if not authenticated
 
 ### 3. Conditional Header Display
+
 **File: [src/app/page.tsx](src/app/page.tsx#L293-L310)**
 
 **Authenticated Users See:**
+
 - Leaderboard icon button
 - Logout button
 
 **Unauthenticated Users See:**
+
 - "Sign In" button (gradient styled)
 
 ```typescript
@@ -81,11 +93,13 @@ const startGame = () => {
 ```
 
 ### 4. Hide Stats Bar for Unauthenticated Users
+
 **File: [src/app/page.tsx](src/app/page.tsx#L317-L356)**
 
 **Before:** Stats and skips were always visible
 
 **After:** Wrapped in conditional rendering
+
 ```typescript
 {user && (
   <>
@@ -105,14 +119,17 @@ const startGame = () => {
 **Result:** Clean landing page without game stats for visitors
 
 ### 5. Removed Blocking Check
+
 **File: [src/app/page.tsx](src/app/page.tsx#L279)**
 
 **Before:**
+
 ```typescript
-if (!user) return null  // ❌ Blocked rendering
+if (!user) return null // ❌ Blocked rendering
 ```
 
 **After:**
+
 ```typescript
 // Removed - now renders for everyone
 ```
@@ -170,17 +187,20 @@ if (!user) return null  // ❌ Blocked rendering
 ## Technical Implementation
 
 ### State Management:
+
 - `user` state determines what's visible
 - Null user = visitor mode (landing page only)
 - User present = full app access (game + stats)
 
 ### Navigation:
+
 - `/` - Landing page (public)
 - `/login` - Google OAuth (public)
 - `/leaderboard` - Scores (requires auth via middleware)
 - Game functionality - Protected by client-side check
 
 ### Middleware:
+
 - Still protects `/leaderboard` and API routes
 - Landing page (`/`) is now publicly accessible
 - Login page (`/login`) remains public

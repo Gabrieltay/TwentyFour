@@ -28,7 +28,7 @@ export default function LoginPage() {
         setError(error.message)
         setLoading(false)
       }
-    } catch (err) {
+    } catch {
       setError('An unexpected error occurred')
       setLoading(false)
     }
@@ -38,7 +38,10 @@ export default function LoginPage() {
     <div className="h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4 overflow-hidden relative">
       {/* Animated background elements */}
       <div className="absolute top-20 right-20 w-64 h-64 bg-blue-200 rounded-full blur-3xl opacity-20 animate-pulse" />
-      <div className="absolute bottom-20 left-20 w-80 h-80 bg-indigo-200 rounded-full blur-3xl opacity-20 animate-pulse" style={{ animationDelay: '1s' }} />
+      <div
+        className="absolute bottom-20 left-20 w-80 h-80 bg-indigo-200 rounded-full blur-3xl opacity-20 animate-pulse"
+        style={{ animationDelay: '1s' }}
+      />
 
       <Card className="w-full max-w-md relative z-10 overflow-hidden border-2 border-blue-100 shadow-2xl animate-slideUp">
         {/* Gradient header background */}
@@ -57,9 +60,7 @@ export default function LoginPage() {
             <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
               Welcome to TwentyFour
             </h1>
-            <p className="text-gray-600 text-sm">
-              Sign in to start playing and track your scores
-            </p>
+            <p className="text-gray-600 text-sm">Sign in to start playing and track your scores</p>
           </div>
 
           {/* Features preview */}

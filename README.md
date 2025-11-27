@@ -1,6 +1,6 @@
 # TwentyFour - Math Puzzle Game
 
-A web-based game where players use four random numbers (1-9) and basic arithmetic operations (+, -, *, /) to make the number 24. Each number can only be used once per round.
+A web-based game where players use four random numbers (1-9) and basic arithmetic operations (+, -, \*, /) to make the number 24. Each number can only be used once per round.
 
 ## Features
 
@@ -59,6 +59,7 @@ DATABASE_URL=your_postgres_connection_string
 ```
 
 To get your DATABASE_URL:
+
 1. In Supabase, go to Project Settings > Database
 2. Copy the connection string under "Connection string" (URI format)
 3. Replace `[YOUR-PASSWORD]` with your database password
@@ -85,7 +86,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 1. **Sign up** or **log in** to your account
 2. You'll see 4 random numbers (1-9)
 3. Create a mathematical expression using all 4 numbers that equals 24
-4. Use +, -, *, / and parentheses
+4. Use +, -, \*, / and parentheses
 5. Each number must be used exactly once
 6. Submit your answer to earn points
 7. Skip a round (costs 1 point) if you get stuck
@@ -94,6 +95,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 ### Examples
 
 For numbers: 8, 7, 6, 3
+
 - `8 + 7 + 6 + 3` = 24 ✓
 - `(8 - 4) * (7 - 1)` = 24 ✓
 
@@ -127,12 +129,14 @@ twentyfour/
 ## Database Schema
 
 ### User
+
 - `id` (String, UUID)
 - `email` (String, unique)
 - `createdAt` (DateTime)
 - `updatedAt` (DateTime)
 
 ### Score
+
 - `id` (String, UUID)
 - `userId` (String, foreign key)
 - `score` (Int)

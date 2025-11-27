@@ -1,17 +1,20 @@
 # TwentyFour Game - Project Summary
 
 ## Overview
+
 A complete web application for the mathematical puzzle game "24" where players use four random numbers (1-9) and basic arithmetic operations to make the number 24.
 
 ## What's Been Built
 
 ### Authentication System
+
 - ✅ User registration and login with Supabase Auth
 - ✅ Protected routes with middleware
 - ✅ Session management
 - ✅ Logout functionality
 
 ### Game Features
+
 - ✅ Random number generation (4 numbers, 1-9, can repeat)
 - ✅ Expression validation (checks if all numbers are used exactly once)
 - ✅ Mathematical evaluation (validates if expression equals 24)
@@ -20,6 +23,7 @@ A complete web application for the mathematical puzzle game "24" where players u
 - ✅ High score tracking per user
 
 ### Database
+
 - ✅ Prisma ORM setup
 - ✅ PostgreSQL database (via Supabase)
 - ✅ User table (id, email, timestamps)
@@ -27,6 +31,7 @@ A complete web application for the mathematical puzzle game "24" where players u
 - ✅ Proper indexing for performance
 
 ### UI/UX
+
 - ✅ Clean, responsive design with Tailwind CSS
 - ✅ Beautiful gradient backgrounds
 - ✅ shadcn/ui components (Button, Card, Input)
@@ -35,6 +40,7 @@ A complete web application for the mathematical puzzle game "24" where players u
 - ✅ Mobile-friendly layout
 
 ### Pages
+
 1. **Login Page** ([/login](src/app/login/page.tsx))
    - Email/password authentication
    - Link to signup
@@ -61,11 +67,13 @@ A complete web application for the mathematical puzzle game "24" where players u
    - Navigation back to game
 
 ### API Routes
+
 - ✅ `POST /api/scores` - Save new score
 - ✅ `GET /api/scores` - Get top 10 scores for leaderboard
 - ✅ `GET /api/scores/highest?userId={id}` - Get user's highest score
 
 ### Game Logic ([src/lib/game.ts](src/lib/game.ts))
+
 - `generateNumbers()` - Generates 4 random numbers (1-9)
 - `validateExpression()` - Validates user's mathematical expression
   - Checks if exactly 4 numbers are used
@@ -75,16 +83,16 @@ A complete web application for the mathematical puzzle game "24" where players u
 
 ## Tech Stack Implemented
 
-| Technology | Purpose | Status |
-|------------|---------|--------|
-| Next.js 16 | React framework with App Router | ✅ |
-| TypeScript | Type-safe development | ✅ |
-| Supabase | Authentication & PostgreSQL | ✅ |
-| Prisma | Database ORM | ✅ |
-| Tailwind CSS | Styling | ✅ |
-| shadcn/ui | UI Components | ✅ |
-| pnpm | Package manager | ✅ |
-| Lucide React | Icons | ✅ |
+| Technology   | Purpose                         | Status |
+| ------------ | ------------------------------- | ------ |
+| Next.js 16   | React framework with App Router | ✅     |
+| TypeScript   | Type-safe development           | ✅     |
+| Supabase     | Authentication & PostgreSQL     | ✅     |
+| Prisma       | Database ORM                    | ✅     |
+| Tailwind CSS | Styling                         | ✅     |
+| shadcn/ui    | UI Components                   | ✅     |
+| pnpm         | Package manager                 | ✅     |
+| Lucide React | Icons                           | ✅     |
 
 ## File Structure
 
@@ -130,6 +138,7 @@ twentyfour/
 ## What Still Needs to Be Done
 
 ### Required Before First Run
+
 1. **Create Supabase Account & Project**
    - Sign up at supabase.com
    - Create a new project
@@ -147,6 +156,7 @@ twentyfour/
    ```
 
 ### Optional Enhancements (Future)
+
 - [ ] Timer for each round
 - [ ] Difficulty levels (different number ranges)
 - [ ] Hints system
@@ -192,17 +202,20 @@ pnpm db:studio        # Open Prisma Studio
 ## Game Rules Implementation
 
 ✅ **Number Generation**
+
 - Generates 4 random numbers between 1-9
 - Numbers can repeat
 - New set generated each round
 
 ✅ **Validation**
+
 - Each of the 4 numbers must be used exactly once
-- Only +, -, *, / operators allowed
+- Only +, -, \*, / operators allowed
 - Parentheses allowed for order of operations
 - Result must equal 24 (with 0.0001 tolerance for floating point)
 
 ✅ **Scoring**
+
 - +1 point for each correct answer
 - -1 point for skipping
 - Minimum score is 0 (can't go negative)
@@ -211,6 +224,7 @@ pnpm db:studio        # Open Prisma Studio
 ## Browser Support
 
 The app should work on all modern browsers:
+
 - Chrome/Edge (latest)
 - Firefox (latest)
 - Safari (latest)
@@ -219,12 +233,14 @@ The app should work on all modern browsers:
 ## Deployment Ready
 
 The app is ready to deploy to:
+
 - **Vercel** (recommended, zero-config Next.js hosting)
 - **Netlify**
 - **Railway**
 - **Any Node.js hosting**
 
 Just remember to:
+
 1. Set environment variables in hosting platform
 2. Run database migrations
 3. Ensure Supabase project is accessible

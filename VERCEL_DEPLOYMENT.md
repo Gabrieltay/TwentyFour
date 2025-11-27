@@ -98,6 +98,7 @@ The project is already configured for Vercel deployment:
 ## Continuous Deployment
 
 Once set up, Vercel will automatically deploy:
+
 - **Production**: When you push to `main` branch
 - **Preview**: When you create a pull request
 

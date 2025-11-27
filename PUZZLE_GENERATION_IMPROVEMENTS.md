@@ -1,6 +1,7 @@
 # Puzzle Generation & UX Improvements
 
 ## Overview
+
 Enhanced the game to ensure all puzzles are solvable and improved the user experience with faster transitions and pre-generated puzzles.
 
 ## Changes Made
@@ -39,6 +40,7 @@ export function generateNumbers(): number[] {
 ```
 
 **Benefits:**
+
 - ✅ Every puzzle is guaranteed to be solvable
 - ✅ Uses existing `hasSolution()` validation function
 - ✅ Fallback to known puzzles prevents infinite loops
@@ -80,6 +82,7 @@ const newRound = () => {
 ```
 
 **Benefits:**
+
 - ✅ Next puzzle is ready instantly (no generation delay)
 - ✅ Validation happens in background during current round
 - ✅ Smoother, more responsive gameplay
@@ -92,10 +95,12 @@ const newRound = () => {
 Reduced waiting times after each round:
 
 **Before:**
+
 - Correct answer → 1500ms delay
 - Wrong answer → 2000ms delay
 
 **After:**
+
 - Correct answer → **800ms** delay (reduced by 47%)
 - Wrong answer → **1200ms** delay (reduced by 40%)
 
@@ -112,6 +117,7 @@ setTimeout(() => {
 ```
 
 **Benefits:**
+
 - ✅ Faster-paced gameplay
 - ✅ Less waiting, more playing
 - ✅ Still enough time to see success/failure message
@@ -120,6 +126,7 @@ setTimeout(() => {
 ## Performance Impact
 
 ### Before:
+
 1. User solves puzzle
 2. **1500ms** wait for success message
 3. Generate new puzzle (blocking, ~50-200ms)
@@ -127,6 +134,7 @@ setTimeout(() => {
 5. **Total: ~1550-1700ms**
 
 ### After:
+
 1. User solves puzzle
 2. **800ms** wait for success message
 3. Use pre-generated puzzle (**instant**)
@@ -153,16 +161,17 @@ The `hasSolution()` function checks all possible combinations:
 If random generation fails after 100 attempts (extremely rare), the system uses proven puzzles:
 
 | Numbers | Solution Example | Result |
-|---------|-----------------|--------|
-| 1,2,3,4 | (1+2+3)×4 | 24 |
-| 3,3,8,8 | 8÷(3-8÷3) | 24 |
-| 1,5,5,5 | 5×(5-1÷5) | 24 |
-| 1,3,4,6 | 6÷(1-3÷4) | 24 |
-| 2,4,6,8 | (2+6)×(8-4) | 24 |
+| ------- | ---------------- | ------ |
+| 1,2,3,4 | (1+2+3)×4        | 24     |
+| 3,3,8,8 | 8÷(3-8÷3)        | 24     |
+| 1,5,5,5 | 5×(5-1÷5)        | 24     |
+| 1,3,4,6 | 6÷(1-3÷4)        | 24     |
+| 2,4,6,8 | (2+6)×(8-4)      | 24     |
 
 ## Future Enhancements (Optional)
 
 Possible improvements:
+
 - Difficulty levels (easy: more solutions, hard: fewer solutions)
 - Hint system (show one possible solution path)
 - Puzzle caching (pre-generate 10-20 puzzles at game start)

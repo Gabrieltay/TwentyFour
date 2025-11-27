@@ -3,6 +3,7 @@
 ## Current Status
 
 The game has been fully rebuilt with:
+
 - ✅ Google OAuth authentication only
 - ✅ Mobile-first button interface
 - ✅ 5-minute timer
@@ -13,7 +14,9 @@ The game has been fully rebuilt with:
 ## Testing the Score Saving Feature
 
 ### Setup:
+
 1. Make sure your dev server is running:
+
    ```bash
    pnpm dev
    ```
@@ -92,14 +95,17 @@ The game has been fully rebuilt with:
 ### Common Issues:
 
 **Issue: "Failed to save score" message appears**
+
 - **Cause**: API request failed
 - **Fix**: Check browser console for the exact error, check server logs
 
 **Issue: Scores save but don't show in leaderboard**
+
 - **Cause**: Leaderboard might be cached or query issue
 - **Fix**: Refresh the leaderboard page, check database directly in Supabase
 
 **Issue: High score doesn't persist after restart**
+
 - **Cause**: Score might not be saving to database
 - **Fix**: Check the `/api/scores/highest` endpoint is working (check network tab in dev tools)
 
@@ -128,6 +134,7 @@ ORDER BY s.score DESC;
 ## What to Report
 
 If you're still having issues, please provide:
+
 1. Screenshot of browser console (with errors in red)
 2. Terminal output (server logs)
 3. What step you're at when the error occurs
