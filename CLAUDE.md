@@ -105,6 +105,22 @@ DATABASE_URL=postgresql://user:password@host:port/database
 
 The `DATABASE_URL` should point to the same PostgreSQL database that Supabase uses.
 
+## Documentation
+
+Additional documentation is available in the [docs/](docs/) folder:
+
+- [docs/SETUP.md](docs/SETUP.md) - Initial project setup instructions
+- [docs/GOOGLE_AUTH_SETUP.md](docs/GOOGLE_AUTH_SETUP.md) - Google OAuth configuration
+- [docs/VERCEL_DEPLOYMENT.md](docs/VERCEL_DEPLOYMENT.md) - Vercel deployment guide
+- [docs/TESTING_GUIDE.md](docs/TESTING_GUIDE.md) - Testing strategies and examples
+- [docs/CODE_QUALITY.md](docs/CODE_QUALITY.md) - Code quality standards and tools
+- [docs/PROJECT_SUMMARY.md](docs/PROJECT_SUMMARY.md) - Project overview and history
+- [docs/LANDING_PAGE_DESIGN.md](docs/LANDING_PAGE_DESIGN.md) - Landing page design specifications
+- [docs/LANDING_PAGE_AUTH_FLOW.md](docs/LANDING_PAGE_AUTH_FLOW.md) - Authentication flow details
+- [docs/SCORE_TRACKING_CHANGES.md](docs/SCORE_TRACKING_CHANGES.md) - Score system implementation notes
+- [docs/PUZZLE_GENERATION_IMPROVEMENTS.md](docs/PUZZLE_GENERATION_IMPROVEMENTS.md) - Puzzle generation algorithm details
+- [docs/VERCEL_REDIRECT_FIX.md](docs/VERCEL_REDIRECT_FIX.md) - OAuth redirect configuration fixes
+
 ## Key Development Notes
 
 - **Package Manager**: This project uses `pnpm` (v10.12.4) - do not use npm or yarn
