@@ -10,13 +10,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'User ID required' }, { status: 400 })
     }
 
-    const highestScore = await prisma.score.findFirst({
+    const scoreRecord = await prisma.score.findUnique({
       where: { userId },
-      orderBy: { score: 'desc' },
       select: { score: true },
     })
 
-    return NextResponse.json({ highScore: highestScore?.score || 0 })
+    return NextResponse.json({ highScore: scoreRecord?.score || 0 })
   } catch (error) {
     console.error('Error fetching highest score:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

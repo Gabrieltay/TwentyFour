@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Trophy, Home, Medal } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
+import type { User } from '@supabase/supabase-js'
 
 interface LeaderboardEntry {
   id: string
@@ -24,7 +25,7 @@ interface LeaderboardEntry {
 export default function LeaderboardPage() {
   const [scores, setScores] = useState<LeaderboardEntry[]>([])
   const [loading, setLoading] = useState(true)
-  const [user, setUser] = useState<any>(null)
+  const [user, setUser] = useState<User | null>(null)
   const router = useRouter()
   const supabase = createClient()
 

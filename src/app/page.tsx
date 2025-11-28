@@ -7,9 +7,10 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Trophy, LogOut, BarChart3, Clock } from 'lucide-react'
 import Link from 'next/link'
+import type { User } from '@supabase/supabase-js'
 
 export default function LandingPage() {
-  const [user, setUser] = useState<any>(null)
+  const [user, setUser] = useState<User | null>(null)
   const router = useRouter()
   const supabase = createClient()
 

@@ -9,6 +9,7 @@ import { Card } from '@/components/ui/card'
 import { Trophy, LogOut, BarChart3, Clock } from 'lucide-react'
 import Link from 'next/link'
 import { Toaster, toast } from 'sonner'
+import type { User } from '@supabase/supabase-js'
 
 type GameState = 'first' | 'second'
 
@@ -18,7 +19,7 @@ export default function GamePage() {
   const [nextNumbers, setNextNumbers] = useState<number[]>([]) // Pre-generated next puzzle
   const [score, setScore] = useState(0)
   const [highScore, setHighScore] = useState(0)
-  const [user, setUser] = useState<any>(null)
+  const [user, setUser] = useState<User | null>(null)
   const [timeLeft, setTimeLeft] = useState(300) // 5 minutes = 300 seconds
   const [skipsLeft, setSkipsLeft] = useState(3)
   const [gameStarted, setGameStarted] = useState(false)
@@ -30,6 +31,9 @@ export default function GamePage() {
   const [firstIndex, setFirstIndex] = useState<number | null>(null)
   const [selectedOperator, setSelectedOperator] = useState<string | null>(null)
   const [operationCount, setOperationCount] = useState(0)
+  const [showScoreBadge, setShowScoreBadge] = useState(false)
+  const [finalScore, setFinalScore] = useState(0)
+  const [isNewHighScore, setIsNewHighScore] = useState(false)
 
   const router = useRouter()
   const supabase = createClient()
@@ -86,6 +90,7 @@ export default function GamePage() {
       const response = await fetch(`/api/scores/highest?userId=${user.id}`)
       if (response.ok) {
         const data = await response.json()
+        console.log('High score loaded:', data.highScore)
         setHighScore(data.highScore || 0)
       }
     } catch (error) {
@@ -178,10 +183,6 @@ export default function GamePage() {
           const newScore = score + 1
           setScore(newScore)
 
-          if (newScore > highScore) {
-            setHighScore(newScore)
-          }
-
           setTimeout(() => {
             newRound()
           }, 800)
@@ -241,14 +242,29 @@ export default function GamePage() {
   const endGame = async () => {
     setGameStarted(false)
 
+    // Set final score and check if it's a new high score
+    setFinalScore(score)
+    const isNewRecord = score > highScore
+    console.log('End game - Score:', score, 'High Score:', highScore, 'Is New Record:', isNewRecord)
+    setIsNewHighScore(isNewRecord)
+
+    // Show the score badge
+    setShowScoreBadge(true)
+
     // Only save and update high score if it's a new record
-    if (score > highScore) {
-      setHighScore(score)
+    if (isNewRecord) {
+      console.log('Saving new high score...')
       await saveScore(score)
+      // Reload the high score from server to ensure it's in sync
+      await loadHighScore()
+      console.log('High score reloaded')
     }
 
-    // Redirect back to home page
-    router.push('/')
+    // Wait for user to see the score badge, then redirect
+    setTimeout(() => {
+      setShowScoreBadge(false)
+      router.push('/')
+    }, 3000)
   }
 
   const saveScore = async (currentScore: number) => {
@@ -262,14 +278,19 @@ export default function GamePage() {
         body: JSON.stringify({ score: currentScore }),
       })
 
+      const data = await response.json()
+      console.log('Save score response:', data)
+
       if (!response.ok) {
-        const errorData = await response.json()
-        console.error('Failed to save score:', errorData)
-        throw new Error(errorData.error || 'Failed to save score')
+        console.error('Failed to save score - HTTP', response.status, data)
+        throw new Error(data.error || 'Failed to save score')
       }
 
-      const data = await response.json()
-      console.log('Score saved successfully:', data)
+      if (data.success) {
+        console.log('Score saved successfully:', data.score)
+      } else {
+        console.log('Score not saved (not higher):', data)
+      }
     } catch (error) {
       console.error('Error saving score:', error)
       // Show error to user
@@ -475,6 +496,34 @@ export default function GamePage() {
           </Button>
         </div>
       </div>
+
+      {/* Score Badge Modal */}
+      {showScoreBadge && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="p-8 max-w-sm w-full text-center space-y-4 animate-in zoom-in-95 duration-300">
+            {isNewHighScore && (
+              <div className="flex justify-center">
+                <div className="w-20 h-20 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center animate-bounce">
+                  <Trophy className="h-12 w-12 text-white" />
+                </div>
+              </div>
+            )}
+            <div className="space-y-2">
+              <h2 className="text-2xl font-bold text-gray-900">
+                {isNewHighScore ? 'New High Score!' : 'Game Over'}
+              </h2>
+              <div className="text-6xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                {finalScore}
+              </div>
+              <p className="text-sm text-gray-600">
+                {isNewHighScore
+                  ? 'Congratulations! You beat your previous best!'
+                  : 'Great effort! Keep playing to beat your high score.'}
+              </p>
+            </div>
+          </Card>
+        </div>
+      )}
     </div>
   )
 }

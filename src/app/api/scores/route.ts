@@ -43,17 +43,35 @@ export async function POST(request: NextRequest) {
     })
     console.log('User upserted:', dbUser.id)
 
-    // Create score record
-    console.log('Creating score record...')
-    const scoreRecord = await prisma.score.create({
-      data: {
-        userId: user.id,
-        score,
-      },
+    // Get existing score to check if new score is higher
+    console.log('Checking for existing score...')
+    const existingScore = await prisma.score.findUnique({
+      where: { userId: user.id },
     })
-    console.log('Score created:', scoreRecord.id, scoreRecord.score)
 
-    return NextResponse.json({ success: true, score: scoreRecord })
+    // Only update if new score is higher or if no score exists
+    if (!existingScore || score > existingScore.score) {
+      console.log('Upserting score record...')
+      const scoreRecord = await prisma.score.upsert({
+        where: { userId: user.id },
+        update: {
+          score,
+        },
+        create: {
+          userId: user.id,
+          score,
+        },
+      })
+      console.log('Score upserted:', scoreRecord.id, scoreRecord.score)
+      return NextResponse.json({ success: true, score: scoreRecord })
+    } else {
+      console.log('Score not higher than existing score, skipping...')
+      return NextResponse.json({
+        success: false,
+        message: 'Score not higher than existing high score',
+        currentHighScore: existingScore.score,
+      })
+    }
   } catch (error) {
     console.error('Error saving score - Full error:', error)
     if (error instanceof Error) {
