@@ -49,6 +49,9 @@ body {
   --color-ring: oklch(25% 0.015 285.885);
   --radius: 0.5rem;
 
+  /* Playful display font used for the wordmark, headings and number tiles */
+  --font-display: var(--font-fredoka), 'Fredoka', ui-rounded, sans-serif;
+
   /* Custom animations */
   --animate-fadeIn: fadeIn 0.6s ease-out forwards;
   --animate-slideUp: slideUp 0.5s ease-out forwards;

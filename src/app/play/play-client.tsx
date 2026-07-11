@@ -3,9 +3,25 @@
 import { useState, useEffect, useCallback } from 'react'
 import Script from 'next/script'
 import { generateNumbers } from '@/lib/game'
-import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
-import { Trophy, Clock, Share2 } from 'lucide-react'
+import { GameLogo } from '@/components/game-logo'
+import { HeaderSparkles } from '@/components/header-sparkles'
+import { cn } from '@/lib/utils'
+import {
+  Trophy,
+  Clock,
+  Share2,
+  Star,
+  Crown,
+  Plus,
+  Minus,
+  X,
+  Divide,
+  Flag,
+  RotateCcw,
+  Sparkle,
+  Check,
+  type LucideIcon,
+} from 'lucide-react'
 import { Toaster, toast } from 'sonner'
 
 type GameState = 'first' | 'second'
@@ -18,6 +34,44 @@ interface PlayClientProps {
 }
 
 const GAME_DURATION_SECONDS = 300
+
+const TILE_STYLES = [
+  { bg: 'bg-emerald-500', bevel: 'shadow-[0_5px_0_0_#0d9354]' },
+  { bg: 'bg-rose-500', bevel: 'shadow-[0_5px_0_0_#be123c]' },
+  { bg: 'bg-blue-500', bevel: 'shadow-[0_5px_0_0_#1d4ed8]' },
+  { bg: 'bg-amber-500', bevel: 'shadow-[0_5px_0_0_#b45309]' },
+]
+
+const OPERATORS: { symbol: string; label: string; Icon: LucideIcon }[] = [
+  { symbol: '+', label: 'Add', Icon: Plus },
+  { symbol: '-', label: 'Subtract', Icon: Minus },
+  { symbol: '×', label: 'Multiply', Icon: X },
+  { symbol: '÷', label: 'Divide', Icon: Divide },
+]
+
+function StatCard({
+  icon,
+  label,
+  value,
+  valueClassName,
+}: {
+  icon: React.ReactNode
+  label: string
+  value: React.ReactNode
+  valueClassName?: string
+}) {
+  return (
+    <div className="flex flex-col gap-1.5 rounded-2xl bg-white px-3 py-3 shadow-sm">
+      <div className="flex items-center gap-1 text-[11px] font-bold tracking-wide text-indigo-950/60 uppercase">
+        {icon}
+        {label}
+      </div>
+      <div className={cn('font-display text-2xl font-semibold text-indigo-950', valueClassName)}>
+        {value}
+      </div>
+    </div>
+  )
+}
 
 export function PlayClient({
   chatId,
@@ -294,160 +348,180 @@ export function PlayClient({
     return `${sign}${numerator}/${denominator}`
   }
 
-  const numberColors = [
-    'bg-green-500 hover:bg-green-600',
-    'bg-red-500 hover:bg-red-600',
-    'bg-blue-500 hover:bg-blue-600',
-    'bg-yellow-500 hover:bg-yellow-600',
-  ]
-
   return (
-    <div className="h-[100dvh] flex flex-col bg-gradient-to-br from-blue-50 to-indigo-100 overflow-hidden">
+    <div className="flex h-[100dvh] flex-col overflow-hidden bg-gradient-to-b from-[#241454] to-[#170c3a]">
       <Script src="https://telegram.org/js/telegram-web-app.js" strategy="afterInteractive" />
       <Script src="https://telegram.org/js/games.js" strategy="afterInteractive" />
       <Toaster position="top-center" richColors />
 
-      <div className="bg-white shadow-sm p-3 flex-shrink-0">
-        <div className="max-w-4xl mx-auto flex justify-center items-center">
-          <h1 className="text-2xl font-bold text-gray-900">TwentyFour</h1>
+      <div className="relative shrink-0 px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-8">
+        <HeaderSparkles />
+        <div className="relative z-10 flex items-center justify-between">
+          <GameLogo />
+          <button
+            onClick={() => toast(`🏆 Best score: ${highScore}`, { duration: 2000 })}
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/10 text-amber-300 ring-1 ring-white/10 transition active:scale-95"
+            aria-label="Best score"
+          >
+            <Trophy className="h-5 w-5" />
+          </button>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
-        <div className="max-w-4xl mx-auto p-4 space-y-3">
-          <div className="grid grid-cols-3 gap-4">
-            <Card className="p-4 text-center">
-              <div className="text-sm text-muted-foreground">Score</div>
-              <div className="text-3xl font-bold">{score}</div>
-            </Card>
-            <Card className="p-4 text-center">
-              <div className="text-sm text-muted-foreground flex items-center justify-center gap-1">
-                <Clock className="h-4 w-4" />
-                Time
-              </div>
-              <div className={`text-3xl font-bold ${timeLeft < 30 ? 'text-red-600' : ''}`}>
-                {formatTime(timeLeft)}
-              </div>
-            </Card>
-            <Card className="p-4 text-center">
-              <div className="text-sm text-muted-foreground flex items-center justify-center gap-1">
-                <Trophy className="h-4 w-4" />
-                Best
-              </div>
-              <div className="text-3xl font-bold">{highScore}</div>
-            </Card>
+      <div className="relative z-10 -mt-4 flex-1 overflow-y-auto rounded-t-[32px] bg-[#F1EEFB]">
+        <div className="mx-auto max-w-md space-y-4 p-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+          <div className="grid grid-cols-3 gap-3">
+            <StatCard
+              icon={<Star className="h-3.5 w-3.5 text-violet-500" />}
+              label="Score"
+              value={score}
+            />
+            <StatCard
+              icon={<Clock className="h-3.5 w-3.5 text-blue-500" />}
+              label="Time"
+              value={formatTime(timeLeft)}
+              valueClassName={timeLeft < 30 ? 'text-rose-600' : undefined}
+            />
+            <StatCard
+              icon={<Crown className="h-3.5 w-3.5 text-amber-500" />}
+              label="Best"
+              value={highScore}
+            />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3">
             {numbers.map((num, index) => (
               <button
                 key={index}
                 onClick={() => handleNumberClick(index)}
                 disabled={num === null}
-                className={`
-                    h-32 rounded-xl text-white font-bold
-                    transition-all duration-200 shadow-lg
-                    ${num === null ? 'invisible' : ''}
-                    ${numberColors[index]}
-                    ${selectedIndex === index ? 'ring-4 ring-white scale-95' : ''}
-                    ${num !== null ? 'active:scale-95' : ''}
-                    disabled:opacity-0 disabled:cursor-not-allowed
-                    flex items-center justify-center
-                  `}
+                className={cn(
+                  'relative flex aspect-square items-center justify-center overflow-hidden rounded-[28px] font-display font-semibold text-white transition-all duration-150',
+                  TILE_STYLES[index].bg,
+                  TILE_STYLES[index].bevel,
+                  num === null && 'invisible',
+                  num !== null && 'active:translate-y-[5px] active:shadow-none',
+                  selectedIndex === index && 'ring-4 ring-white'
+                )}
               >
-                {num !== null ? (
-                  <span className={Number.isInteger(num) ? 'text-6xl' : 'text-4xl'}>
+                <Sparkle className="absolute top-3 left-3 h-4 w-4 text-white/30" />
+                <Sparkle className="absolute right-4 bottom-4 h-3 w-3 text-white/20" />
+                {num !== null && (
+                  <span
+                    className={cn(
+                      '[text-shadow:0_2px_0_rgba(0,0,0,0.15)]',
+                      Number.isInteger(num) ? 'text-5xl' : 'text-3xl'
+                    )}
+                  >
                     {toFraction(num)}
                   </span>
-                ) : (
-                  ''
                 )}
               </button>
             ))}
           </div>
 
           <div className="grid grid-cols-4 gap-2">
-            {['+', '-', '×', '÷'].map(op => (
-              <Button
-                key={op}
-                onClick={() => handleOperatorClick(op)}
+            {OPERATORS.map(op => (
+              <button
+                key={op.symbol}
+                onClick={() => handleOperatorClick(op.symbol)}
                 disabled={firstNumber === null}
-                variant="outline"
-                className={`h-16 text-3xl font-bold ${
-                  selectedOperator === op ? 'bg-blue-500 text-white' : ''
-                }`}
+                className={cn(
+                  'flex flex-col items-center gap-1 rounded-2xl bg-white py-3 text-indigo-900 shadow-sm transition active:scale-95 disabled:opacity-40',
+                  selectedOperator === op.symbol && 'bg-violet-600 text-white'
+                )}
               >
-                {op}
-              </Button>
+                <op.Icon className="h-5 w-5" />
+                <span className="text-[10px] font-bold tracking-wide uppercase">{op.label}</span>
+              </button>
             ))}
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <Button
+          <div className="grid grid-cols-2 gap-3">
+            <button
               onClick={handleSkip}
               disabled={skipsLeft === 0}
-              variant="outline"
-              size="lg"
-              className="h-14 flex items-center gap-2"
+              className="flex items-center gap-3 rounded-2xl bg-white px-4 py-3 text-left shadow-sm transition active:scale-[0.98] disabled:opacity-50"
             >
-              <span>Skip</span>
-              <div className="flex gap-1">
+              <Sparkle className="h-5 w-5 shrink-0 text-violet-400" />
+              <div className="min-w-0 flex-1">
+                <div className="font-display text-sm font-semibold text-indigo-950">Skip</div>
+                <div className="text-[11px] text-indigo-950/50">Use wisely!</div>
+              </div>
+              <div className="flex shrink-0 gap-1">
                 {[0, 1, 2].map(i => (
                   <div
                     key={i}
-                    className={`w-5 h-5 rounded-full flex items-center justify-center text-white text-xs font-bold ${
-                      i < skipsLeft ? 'bg-blue-500' : 'bg-gray-300'
-                    }`}
+                    className={cn(
+                      'flex h-5 w-5 items-center justify-center rounded-full',
+                      i < skipsLeft ? 'bg-violet-500' : 'bg-gray-200'
+                    )}
                   >
-                    {i < skipsLeft ? '✓' : ''}
+                    {i < skipsLeft && <Check className="h-3 w-3 text-white" />}
                   </div>
                 ))}
               </div>
-            </Button>
-            <Button onClick={resetRound} variant="outline" size="lg" className="h-14">
-              Reset
-            </Button>
+            </button>
+            <button
+              onClick={resetRound}
+              className="flex items-center gap-3 rounded-2xl bg-white px-4 py-3 text-left shadow-sm transition active:scale-[0.98]"
+            >
+              <RotateCcw className="h-5 w-5 shrink-0 text-violet-400" />
+              <div>
+                <div className="font-display text-sm font-semibold text-indigo-950">Reset</div>
+                <div className="text-[11px] text-indigo-950/50">Start over</div>
+              </div>
+            </button>
           </div>
 
-          <Button onClick={endGame} variant="destructive" className="w-full">
-            End Game
-          </Button>
+          <button
+            onClick={endGame}
+            className="flex w-full items-center gap-3 rounded-2xl bg-rose-500 px-5 py-4 text-left text-white shadow-[0_5px_0_0_#9f1239] transition active:translate-y-[5px] active:shadow-none"
+          >
+            <Flag className="h-6 w-6 shrink-0" />
+            <div>
+              <div className="font-display text-base font-semibold">End Game</div>
+              <div className="text-xs text-white/80">Finish and see your score</div>
+            </div>
+          </button>
         </div>
       </div>
 
       {showScoreBadge && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <Card className="p-8 max-w-sm w-full text-center space-y-4 animate-in zoom-in-95 duration-300">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="animate-in zoom-in-95 w-full max-w-sm space-y-4 rounded-3xl bg-white p-8 text-center shadow-xl duration-300">
             {isNewHighScore && (
               <div className="flex justify-center">
-                <div className="w-20 h-20 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center animate-bounce">
+                <div className="flex h-20 w-20 animate-bounce items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-orange-500">
                   <Trophy className="h-12 w-12 text-white" />
                 </div>
               </div>
             )}
             <div className="space-y-2">
-              <h2 className="text-2xl font-bold text-gray-900">
+              <h2 className="font-display text-2xl font-semibold text-indigo-950">
                 {isNewHighScore ? 'New High Score!' : 'Game Over'}
               </h2>
-              <div className="text-6xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+              <div className="font-display bg-gradient-to-r from-violet-600 to-rose-500 bg-clip-text text-6xl font-semibold text-transparent">
                 {finalScore}
               </div>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-indigo-950/60">
                 {isNewHighScore ? 'Congratulations! You beat your previous best!' : 'Great effort!'}
               </p>
             </div>
-            <Button
+            <button
               onClick={handleShareScore}
-              variant="outline"
-              className="w-full flex items-center gap-2"
+              className="flex w-full items-center justify-center gap-2 rounded-2xl border border-indigo-100 bg-white py-3 font-semibold text-indigo-950 shadow-sm transition active:scale-[0.98]"
             >
               <Share2 className="h-4 w-4" />
               Share Score
-            </Button>
-            <Button onClick={handlePlayAgain} className="w-full">
+            </button>
+            <button
+              onClick={handlePlayAgain}
+              className="w-full rounded-2xl bg-violet-600 py-3 font-semibold text-white shadow-[0_4px_0_0_#5b21b6] transition active:translate-y-[4px] active:shadow-none"
+            >
               Play Again
-            </Button>
-          </Card>
+            </button>
+          </div>
         </div>
       )}
     </div>
