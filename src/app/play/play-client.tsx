@@ -5,7 +5,7 @@ import Script from 'next/script'
 import { generateNumbers } from '@/lib/game'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { Trophy, Clock } from 'lucide-react'
+import { Trophy, Clock, Share2 } from 'lucide-react'
 import { Toaster, toast } from 'sonner'
 
 type GameState = 'first' | 'second'
@@ -238,11 +238,15 @@ export function PlayClient({
       setHighScore(score)
       saveScore(score)
     }
+  }
 
-    setTimeout(() => {
-      setShowScoreBadge(false)
-      startGame()
-    }, 3000)
+  const handlePlayAgain = () => {
+    setShowScoreBadge(false)
+    startGame()
+  }
+
+  const handleShareScore = () => {
+    window.TelegramGameProxy?.shareScore()
   }
 
   const formatTime = (seconds: number) => {
@@ -300,6 +304,7 @@ export function PlayClient({
   return (
     <div className="h-[100dvh] flex flex-col bg-gradient-to-br from-blue-50 to-indigo-100 overflow-hidden">
       <Script src="https://telegram.org/js/telegram-web-app.js" strategy="afterInteractive" />
+      <Script src="https://telegram.org/js/games.js" strategy="afterInteractive" />
       <Toaster position="top-center" richColors />
 
       <div className="bg-white shadow-sm p-3 flex-shrink-0">
@@ -428,11 +433,20 @@ export function PlayClient({
                 {finalScore}
               </div>
               <p className="text-sm text-gray-600">
-                {isNewHighScore
-                  ? 'Congratulations! You beat your previous best!'
-                  : 'Great effort! Starting a new round...'}
+                {isNewHighScore ? 'Congratulations! You beat your previous best!' : 'Great effort!'}
               </p>
             </div>
+            <Button
+              onClick={handleShareScore}
+              variant="outline"
+              className="w-full flex items-center gap-2"
+            >
+              <Share2 className="h-4 w-4" />
+              Share Score
+            </Button>
+            <Button onClick={handlePlayAgain} className="w-full">
+              Play Again
+            </Button>
           </Card>
         </div>
       )}
