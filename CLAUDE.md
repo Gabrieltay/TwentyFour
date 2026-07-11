@@ -4,14 +4,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-TwentyFour is a web-based math puzzle game where players use four random numbers (1-9) and basic arithmetic operations (+, -, \*, /) to make the number 24. Built with Next.js 16 App Router, TypeScript, Supabase authentication, and Prisma ORM with PostgreSQL.
+TwentyFour is a math puzzle game distributed as a **Telegram HTML5 Game**. Players use four random numbers (1-9) and basic arithmetic operations (+, -, \*, /) to make the number 24. Built with Next.js 16 App Router, TypeScript, and Tailwind/shadcn-ui, deployed on Vercel. The bot is [@TwentyFourGameBot](https://t.me/TwentyFourGameBot).
+
+There is no database and no login system — Telegram is the only identity provider, and scores live entirely in Telegram's native Games score API (`setGameScore` / `getGameHighScores`).
 
 ## Essential Commands
 
 ### Development
 
 - `pnpm dev` - Start development server (localhost:3000)
-- `pnpm build` - Build production application (runs `prisma generate` first)
+- `pnpm build` - Build production application
 - `pnpm start` - Start production server
 
 ### Code Quality
@@ -23,64 +25,36 @@ TwentyFour is a web-based math puzzle game where players use four random numbers
 - `pnpm format` - Format all files with Prettier
 - `pnpm format:check` - Check formatting without modifying files
 
-### Database
-
-- `pnpm db:generate` - Generate Prisma client (runs automatically on install)
-- `pnpm db:push` - Push schema changes to database without migrations
-- `pnpm db:studio` - Open Prisma Studio for database inspection
-
 ## Architecture
 
-### Dual Authentication and Data Layer
+### Two surfaces
 
-The application uses a split architecture with Supabase for authentication and Prisma for data persistence:
+- **Root route (`src/app/page.tsx`)**: a static marketing page. No auth, no gameplay, no API calls — just an explanation of the game and a "Play on Telegram" link to `https://t.me/TwentyFourGameBot`.
+- **`/play` (`src/app/play/page.tsx` + `src/app/play/play-client.tsx`)**: the actual game. Only reachable from inside Telegram's in-app WebView, launched via the bot's "Play" button. Requires `user_id` plus either (`chat_id` + `message_id`) or `inline_message_id` as query params — these are appended by the bot webhook when it answers the game's callback query. If they're missing, the page shows a message directing the user back to the bot instead of the game.
 
-- **Supabase**: Handles user authentication, sessions, and JWT tokens
-- **Prisma + PostgreSQL**: Stores user profiles, scores, and game data
-- **User Synchronization**: When scores are saved ([src/app/api/scores/route.ts](src/app/api/scores/route.ts)), users are upserted from Supabase auth metadata into Prisma database, syncing `name` and `avatarUrl` from OAuth providers
+### Telegram bot webhook
 
-### Supabase Client Patterns
+`src/app/api/telegram/webhook/route.ts` handles updates from Telegram (configured via `setWebhook`):
 
-Three distinct Supabase clients for different contexts:
+- `/start` → replies with `sendGame` using `TELEGRAM_GAME_SHORT_NAME`.
+- `callback_query` with a matching `game_short_name` (i.e. the "Play" button was tapped) → `answerCallbackQuery` with a `url` pointing at `${NEXT_PUBLIC_APP_URL}/play` plus `user_id`, and either `chat_id`+`message_id` or `inline_message_id` depending on how the game message was sent.
+- Optionally verifies the `X-Telegram-Bot-Api-Secret-Token` header against `TELEGRAM_WEBHOOK_SECRET` if that env var is set.
 
-1. **Server Components** ([src/lib/supabase/server.ts](src/lib/supabase/server.ts)): Uses `createServerClient` with Next.js cookies for RSC
-2. **Client Components** ([src/lib/supabase/client.ts](src/lib/supabase/client.ts)): Uses `createBrowserClient` for browser-side auth
-3. **Middleware** ([src/lib/supabase/middleware.ts](src/lib/supabase/middleware.ts)): Refreshes session cookies on each request
+### Score submission
 
-Always use the appropriate client for the context - importing the wrong one will cause authentication issues.
+On game over, `play-client.tsx` POSTs to `src/app/api/telegram/score/route.ts` with the score and the Telegram WebApp SDK's `initData`. The route validates `initData`'s HMAC signature against `TELEGRAM_BOT_TOKEN` (see `validateInitData` in `src/lib/telegram.ts`) to get a trusted Telegram user id, then calls Telegram's `setGameScore`. There is no local persistence — Telegram's Games API is the only source of truth, and it already only updates a player's score if the new one is higher.
 
-### Prisma Singleton with Adapter
+### Telegram Web App SDK
 
-Prisma is configured with the PostgreSQL adapter pattern ([src/lib/prisma.ts](src/lib/prisma.ts:5-14)):
-
-- Uses `pg` Pool with `@prisma/adapter-pg` for better connection management
-- Singleton pattern with `globalThis` to prevent multiple instances in development
-- Logs all queries, errors, and warnings
-
-When making database changes, always run `pnpm db:generate` before `pnpm db:push`.
+`play-client.tsx` loads `https://telegram.org/js/telegram-web-app.js` via `next/script` and calls `window.Telegram.WebApp.ready()` / `.expand()` on mount. Types for `window.Telegram` live in `src/types/telegram-web-app.d.ts`. Avoid `100vh`/fixed browser-chrome assumptions in this route — use `100dvh` and Telegram's WebApp APIs instead, since it renders inside an in-app WebView.
 
 ### Game Logic
 
-Core game logic is in [src/lib/game.ts](src/lib/game.ts):
+Core game logic (unchanged) is in [src/lib/game.ts](src/lib/game.ts):
 
-- `generateNumbers()`: Generates 4 random numbers (1-9) that have a valid solution to reach 24. Uses `hasSolution()` to verify solvability, falls back to known puzzles if needed after 100 attempts.
-- `validateExpression()`: Validates player input by:
-  1. Checking exactly 4 numbers are used
-  2. Verifying each given number is used exactly once
-  3. Ensuring only valid characters (digits, operators, parentheses)
-  4. Evaluating the expression using Function constructor
-  5. Checking result equals 24 (with 0.0001 tolerance for floating point)
-- `hasSolution()`: Brute-force solver that tries all permutations and operator combinations to verify a puzzle is solvable
-
-### Next.js App Router Structure
-
-- [src/app/page.tsx](src/app/page.tsx) - Main game interface (Server Component)
-- [src/app/login/page.tsx](src/app/login/page.tsx) - Authentication page
-- [src/app/leaderboard/page.tsx](src/app/leaderboard/page.tsx) - Top scores display
-- [src/app/api/scores/route.ts](src/app/api/scores/route.ts) - POST: save scores, GET: fetch top 10 leaderboard
-- [src/app/api/scores/highest/route.ts](src/app/api/scores/highest/route.ts) - GET: fetch user's highest score
-- [src/app/auth/callback/route.ts](src/app/auth/callback/route.ts) - OAuth callback handler
-- [src/middleware.ts](src/middleware.ts) - Session refresh on all routes (except static files)
+- `generateNumbers()`: Generates 4 random numbers (1-9) that have a valid solution to reach 24.
+- `validateExpression()`: Validates a hand-typed expression evaluates to 24 using each number exactly once.
+- `hasSolution()`: Brute-force solver used to verify a puzzle is solvable.
 
 ### UI Components
 
@@ -95,36 +69,24 @@ Husky hooks are configured:
 
 ## Environment Variables
 
-Required in `.env.local`:
+Required in `.env.local` (see `.env.local.example`):
 
 ```
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-DATABASE_URL=postgresql://user:password@host:port/database
+TELEGRAM_BOT_TOKEN=              # from @BotFather, server-only, never expose to the client
+TELEGRAM_GAME_SHORT_NAME=        # short_name registered via BotFather's /newgame
+TELEGRAM_WEBHOOK_SECRET=         # optional, verifies webhook requests are from Telegram
+NEXT_PUBLIC_APP_URL=             # public base URL of this deployment, e.g. https://twentyfour.example.com
 ```
 
-The `DATABASE_URL` should point to the same PostgreSQL database that Supabase uses.
+After deploying, point the bot's webhook at `${NEXT_PUBLIC_APP_URL}/api/telegram/webhook` via Telegram's `setWebhook` API, and make sure the game's URL registered with BotFather also matches `${NEXT_PUBLIC_APP_URL}/play`.
 
 ## Documentation
 
-Additional documentation is available in the [docs/](docs/) folder:
-
-- [docs/SETUP.md](docs/SETUP.md) - Initial project setup instructions
-- [docs/GOOGLE_AUTH_SETUP.md](docs/GOOGLE_AUTH_SETUP.md) - Google OAuth configuration
-- [docs/VERCEL_DEPLOYMENT.md](docs/VERCEL_DEPLOYMENT.md) - Vercel deployment guide
-- [docs/TESTING_GUIDE.md](docs/TESTING_GUIDE.md) - Testing strategies and examples
-- [docs/CODE_QUALITY.md](docs/CODE_QUALITY.md) - Code quality standards and tools
-- [docs/PROJECT_SUMMARY.md](docs/PROJECT_SUMMARY.md) - Project overview and history
-- [docs/LANDING_PAGE_DESIGN.md](docs/LANDING_PAGE_DESIGN.md) - Landing page design specifications
-- [docs/LANDING_PAGE_AUTH_FLOW.md](docs/LANDING_PAGE_AUTH_FLOW.md) - Authentication flow details
-- [docs/SCORE_TRACKING_CHANGES.md](docs/SCORE_TRACKING_CHANGES.md) - Score system implementation notes
-- [docs/PUZZLE_GENERATION_IMPROVEMENTS.md](docs/PUZZLE_GENERATION_IMPROVEMENTS.md) - Puzzle generation algorithm details
-- [docs/VERCEL_REDIRECT_FIX.md](docs/VERCEL_REDIRECT_FIX.md) - OAuth redirect configuration fixes
+The [docs/](docs/) folder has some pre-Telegram-migration docs (Supabase/Google OAuth setup, leaderboard UI, etc.) that no longer reflect the current architecture — treat anything about auth, Prisma, or a database-backed leaderboard there as historical, not current.
 
 ## Key Development Notes
 
 - **Package Manager**: This project uses `pnpm` (v10.12.4) - do not use npm or yarn
 - **React 19**: Using React 19 RC - be aware of breaking changes from React 18
 - **Next.js 16**: Uses App Router exclusively, no Pages directory
-- **Authentication Flow**: Middleware updates session → Server Components read user → API routes verify auth
-- **Score System**: Scores are always associated with authenticated users; leaderboard shows highest score per user
+- **No database**: there is intentionally no Prisma/Postgres/Supabase in this project. Don't reintroduce persistence without checking with the user first — scores are meant to live only in Telegram.

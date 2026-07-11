@@ -1,26 +1,36 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { useState, useEffect, useCallback } from 'react'
+import Script from 'next/script'
 import { generateNumbers } from '@/lib/game'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { Trophy, LogOut, BarChart3, Clock } from 'lucide-react'
-import Link from 'next/link'
+import { Trophy, Clock } from 'lucide-react'
 import { Toaster, toast } from 'sonner'
-import type { User } from '@supabase/supabase-js'
 
 type GameState = 'first' | 'second'
 
-export default function GamePage() {
+interface PlayClientProps {
+  chatId?: number
+  messageId?: number
+  inlineMessageId?: string
+  initialHighScore: number
+}
+
+const GAME_DURATION_SECONDS = 300
+
+export function PlayClient({
+  chatId,
+  messageId,
+  inlineMessageId,
+  initialHighScore,
+}: PlayClientProps) {
   const [numbers, setNumbers] = useState<(number | null)[]>([null, null, null, null])
   const [originalNumbers, setOriginalNumbers] = useState<number[]>([])
-  const [nextNumbers, setNextNumbers] = useState<number[]>([]) // Pre-generated next puzzle
+  const [nextNumbers, setNextNumbers] = useState<number[]>([])
   const [score, setScore] = useState(0)
-  const [highScore, setHighScore] = useState(0)
-  const [user, setUser] = useState<User | null>(null)
-  const [timeLeft, setTimeLeft] = useState(300) // 5 minutes = 300 seconds
+  const [highScore, setHighScore] = useState(initialHighScore)
+  const [timeLeft, setTimeLeft] = useState(GAME_DURATION_SECONDS)
   const [skipsLeft, setSkipsLeft] = useState(3)
   const [gameStarted, setGameStarted] = useState(false)
 
@@ -35,93 +45,86 @@ export default function GamePage() {
   const [finalScore, setFinalScore] = useState(0)
   const [isNewHighScore, setIsNewHighScore] = useState(false)
 
-  const router = useRouter()
-  const supabase = createClient()
-
   useEffect(() => {
-    checkUser()
-    loadHighScore()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (window.Telegram?.WebApp) {
+      window.Telegram.WebApp.ready()
+      window.Telegram.WebApp.expand()
+    }
   }, [])
 
-  useEffect(() => {
-    // Auto-start game when component mounts
-    if (user && !gameStarted) {
-      startGame()
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user])
-
-  useEffect(() => {
-    let timer: NodeJS.Timeout
-    if (gameStarted && timeLeft > 0) {
-      timer = setInterval(() => {
-        setTimeLeft(prev => {
-          if (prev <= 1) {
-            endGame()
-            return 0
-          }
-          return prev - 1
-        })
-      }, 1000)
-    }
-    return () => clearInterval(timer)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gameStarted, timeLeft])
-
-  const checkUser = async () => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-    if (!user) {
-      router.push('/login')
-      return
-    }
-    setUser(user)
-  }
-
-  const loadHighScore = async () => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-    if (!user) return
-
-    try {
-      const response = await fetch(`/api/scores/highest?userId=${user.id}`)
-      if (response.ok) {
-        const data = await response.json()
-        console.log('High score loaded:', data.highScore)
-        setHighScore(data.highScore || 0)
-      }
-    } catch (error) {
-      console.error('Error loading high score:', error)
-    }
-  }
-
-  const startGame = () => {
+  const startGame = useCallback(() => {
     setScore(0)
-    setTimeLeft(300)
+    setTimeLeft(GAME_DURATION_SECONDS)
     setSkipsLeft(3)
     setGameStarted(true)
-    // Pre-generate first puzzle and next puzzle
     const firstPuzzle = generateNumbers()
     setNumbers(firstPuzzle)
     setOriginalNumbers(firstPuzzle)
-    // Pre-generate next puzzle in background
     setTimeout(() => {
       setNextNumbers(generateNumbers())
     }, 0)
     resetCalculator()
-  }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  useEffect(() => {
+    startGame()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const saveScore = useCallback(
+    async (currentScore: number) => {
+      const initData = window.Telegram?.WebApp?.initData
+      if (!initData) {
+        console.error('Telegram initData unavailable, skipping score submission')
+        return
+      }
+
+      try {
+        const response = await fetch('/api/telegram/score', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            score: currentScore,
+            initData,
+            chatId,
+            messageId,
+            inlineMessageId,
+          }),
+        })
+
+        if (!response.ok) {
+          const data = await response.json().catch(() => ({}))
+          throw new Error(data.error || 'Failed to submit score')
+        }
+      } catch (error) {
+        console.error('Error submitting score to Telegram:', error)
+        toast.error('⚠️ Failed to submit score to Telegram.', { duration: 3000 })
+      }
+    },
+    [chatId, messageId, inlineMessageId]
+  )
+
+  useEffect(() => {
+    if (!gameStarted || timeLeft <= 0) return
+    const timer = setInterval(() => {
+      setTimeLeft(prev => {
+        if (prev <= 1) {
+          endGame()
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+    return () => clearInterval(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gameStarted, timeLeft])
 
   const newRound = () => {
-    // Use pre-generated numbers if available, otherwise generate new ones
     const newNumbers = nextNumbers.length > 0 ? nextNumbers : generateNumbers()
     setNumbers(newNumbers)
     setOriginalNumbers(newNumbers)
     resetCalculator()
-
-    // Pre-generate next puzzle in background for smooth experience
     setTimeout(() => {
       setNextNumbers(generateNumbers())
     }, 0)
@@ -134,82 +137,6 @@ export default function GamePage() {
     setFirstIndex(null)
     setSelectedOperator(null)
     setOperationCount(0)
-  }
-
-  const handleNumberClick = (index: number) => {
-    const num = numbers[index]
-    if (num === null) return
-
-    if (gameState === 'first') {
-      // First number selection
-      if (selectedIndex === index) {
-        // Deselect
-        setSelectedIndex(null)
-        setFirstNumber(null)
-        setFirstIndex(null)
-      } else {
-        setSelectedIndex(index)
-        setFirstNumber(num)
-        setFirstIndex(index)
-      }
-    } else if (gameState === 'second' && selectedOperator) {
-      // Second number selection - perform operation
-      if (index === firstIndex) return // Can't select same number
-
-      const result = calculateResult(firstNumber!, num, selectedOperator)
-
-      if (result === null) {
-        toast.error('Cannot divide by zero!', {
-          duration: 1500,
-        })
-        return
-      }
-
-      // Update the numbers array
-      const newNumbers = [...numbers]
-      newNumbers[index] = result
-      newNumbers[firstIndex!] = null
-      setNumbers(newNumbers)
-
-      const newOpCount = operationCount + 1
-
-      // Check if this was the final operation
-      if (newOpCount === 3) {
-        if (Math.abs(result - 24) < 0.0001) {
-          // Success!
-          toast.success('🎉 Correct! +1 point', {
-            duration: 1500,
-          })
-          const newScore = score + 1
-          setScore(newScore)
-
-          setTimeout(() => {
-            newRound()
-          }, 800)
-        } else {
-          toast.error(`❌ Result is ${result}, not 24. Try again!`, {
-            duration: 1500,
-          })
-          setTimeout(() => {
-            resetRound()
-          }, 1200)
-        }
-      } else {
-        // Continue with next operation
-        setOperationCount(newOpCount)
-        setSelectedIndex(index)
-        setFirstNumber(result)
-        setFirstIndex(index)
-        setGameState('first')
-        setSelectedOperator(null)
-      }
-    }
-  }
-
-  const handleOperatorClick = (operator: string) => {
-    if (firstNumber === null || firstIndex === null) return
-    setSelectedOperator(operator)
-    setGameState('second')
   }
 
   const calculateResult = (a: number, b: number, operator: string): number | null => {
@@ -227,6 +154,67 @@ export default function GamePage() {
     }
   }
 
+  const handleNumberClick = (index: number) => {
+    const num = numbers[index]
+    if (num === null) return
+
+    if (gameState === 'first') {
+      if (selectedIndex === index) {
+        setSelectedIndex(null)
+        setFirstNumber(null)
+        setFirstIndex(null)
+      } else {
+        setSelectedIndex(index)
+        setFirstNumber(num)
+        setFirstIndex(index)
+      }
+    } else if (gameState === 'second' && selectedOperator) {
+      if (index === firstIndex) return
+
+      const result = calculateResult(firstNumber!, num, selectedOperator)
+
+      if (result === null) {
+        toast.error('Cannot divide by zero!', { duration: 1500 })
+        return
+      }
+
+      const newNumbers = [...numbers]
+      newNumbers[index] = result
+      newNumbers[firstIndex!] = null
+      setNumbers(newNumbers)
+
+      const newOpCount = operationCount + 1
+
+      if (newOpCount === 3) {
+        if (Math.abs(result - 24) < 0.0001) {
+          toast.success('🎉 Correct! +1 point', { duration: 1500 })
+          setScore(prev => prev + 1)
+          setTimeout(() => {
+            newRound()
+          }, 800)
+        } else {
+          toast.error(`❌ Result is ${result}, not 24. Try again!`, { duration: 1500 })
+          setTimeout(() => {
+            resetRound()
+          }, 1200)
+        }
+      } else {
+        setOperationCount(newOpCount)
+        setSelectedIndex(index)
+        setFirstNumber(result)
+        setFirstIndex(index)
+        setGameState('first')
+        setSelectedOperator(null)
+      }
+    }
+  }
+
+  const handleOperatorClick = (operator: string) => {
+    if (firstNumber === null || firstIndex === null) return
+    setSelectedOperator(operator)
+    setGameState('second')
+  }
+
   const resetRound = () => {
     setNumbers([...originalNumbers])
     resetCalculator()
@@ -239,71 +227,22 @@ export default function GamePage() {
     }
   }
 
-  const endGame = async () => {
+  const endGame = () => {
     setGameStarted(false)
-
-    // Set final score and check if it's a new high score
     setFinalScore(score)
     const isNewRecord = score > highScore
-    console.log('End game - Score:', score, 'High Score:', highScore, 'Is New Record:', isNewRecord)
     setIsNewHighScore(isNewRecord)
-
-    // Show the score badge
     setShowScoreBadge(true)
 
-    // Only save and update high score if it's a new record
     if (isNewRecord) {
-      console.log('Saving new high score...')
-      await saveScore(score)
-      // Reload the high score from server to ensure it's in sync
-      await loadHighScore()
-      console.log('High score reloaded')
+      setHighScore(score)
+      saveScore(score)
     }
 
-    // Wait for user to see the score badge, then redirect
     setTimeout(() => {
       setShowScoreBadge(false)
-      router.push('/')
+      startGame()
     }, 3000)
-  }
-
-  const saveScore = async (currentScore: number) => {
-    try {
-      console.log('Saving score:', currentScore)
-      const response = await fetch('/api/scores', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ score: currentScore }),
-      })
-
-      const data = await response.json()
-      console.log('Save score response:', data)
-
-      if (!response.ok) {
-        console.error('Failed to save score - HTTP', response.status, data)
-        throw new Error(data.error || 'Failed to save score')
-      }
-
-      if (data.success) {
-        console.log('Score saved successfully:', data.score)
-      } else {
-        console.log('Score not saved (not higher):', data)
-      }
-    } catch (error) {
-      console.error('Error saving score:', error)
-      // Show error to user
-      toast.error('⚠️ Failed to save score. Please check your connection.', {
-        duration: 3000,
-      })
-    }
-  }
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut()
-    router.push('/login')
-    router.refresh()
   }
 
   const formatTime = (seconds: number) => {
@@ -313,25 +252,18 @@ export default function GamePage() {
   }
 
   const toFraction = (num: number): string => {
-    // If it's a whole number, return as is
     if (Number.isInteger(num)) {
       return num.toString()
     }
 
-    // Handle negative numbers
     const sign = num < 0 ? '-' : ''
     const absNum = Math.abs(num)
-
-    // Find the best fraction approximation
     const tolerance = 1.0e-6
-    let numerator = 1
-    let denominator = 1
 
     let bestNumerator = Math.round(absNum)
     let bestDenominator = 1
     let bestError = Math.abs(absNum - bestNumerator)
 
-    // Try denominators up to 100
     for (let d = 2; d <= 100; d++) {
       const n = Math.round(absNum * d)
       const value = n / d
@@ -346,11 +278,10 @@ export default function GamePage() {
       }
     }
 
-    // Simplify the fraction
     const gcd = (a: number, b: number): number => (b === 0 ? a : gcd(b, a % b))
     const divisor = gcd(bestNumerator, bestDenominator)
-    numerator = bestNumerator / divisor
-    denominator = bestDenominator / divisor
+    const numerator = bestNumerator / divisor
+    const denominator = bestDenominator / divisor
 
     if (denominator === 1) {
       return sign + numerator.toString()
@@ -367,32 +298,18 @@ export default function GamePage() {
   ]
 
   return (
-    <div className="h-screen flex flex-col bg-gradient-to-br from-blue-50 to-indigo-100 overflow-hidden">
+    <div className="h-[100dvh] flex flex-col bg-gradient-to-br from-blue-50 to-indigo-100 overflow-hidden">
+      <Script src="https://telegram.org/js/telegram-web-app.js" strategy="afterInteractive" />
       <Toaster position="top-center" richColors />
-      {/* Header */}
+
       <div className="bg-white shadow-sm p-3 flex-shrink-0">
-        <div className="max-w-4xl mx-auto flex justify-between items-center">
+        <div className="max-w-4xl mx-auto flex justify-center items-center">
           <h1 className="text-2xl font-bold text-gray-900">TwentyFour</h1>
-          <div className="flex gap-2">
-            {user && (
-              <>
-                <Link href="/leaderboard">
-                  <Button variant="outline" size="sm">
-                    <BarChart3 className="h-4 w-4" />
-                  </Button>
-                </Link>
-                <Button variant="outline" size="sm" onClick={handleLogout}>
-                  <LogOut className="h-4 w-4" />
-                </Button>
-              </>
-            )}
-          </div>
         </div>
       </div>
 
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-4xl mx-auto p-4 space-y-3">
-          {/* Stats Bar */}
           <div className="grid grid-cols-3 gap-4">
             <Card className="p-4 text-center">
               <div className="text-sm text-muted-foreground">Score</div>
@@ -416,7 +333,6 @@ export default function GamePage() {
             </Card>
           </div>
 
-          {/* Number Buttons */}
           <div className="grid grid-cols-2 gap-4">
             {numbers.map((num, index) => (
               <button
@@ -445,7 +361,6 @@ export default function GamePage() {
             ))}
           </div>
 
-          {/* Operator Buttons */}
           <div className="grid grid-cols-4 gap-2">
             {['+', '-', '×', '÷'].map(op => (
               <Button
@@ -462,7 +377,6 @@ export default function GamePage() {
             ))}
           </div>
 
-          {/* Action Buttons */}
           <div className="grid grid-cols-2 gap-4">
             <Button
               onClick={handleSkip}
@@ -490,14 +404,12 @@ export default function GamePage() {
             </Button>
           </div>
 
-          {/* End Game Button */}
           <Button onClick={endGame} variant="destructive" className="w-full">
             End Game
           </Button>
         </div>
       </div>
 
-      {/* Score Badge Modal */}
       {showScoreBadge && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <Card className="p-8 max-w-sm w-full text-center space-y-4 animate-in zoom-in-95 duration-300">
@@ -518,7 +430,7 @@ export default function GamePage() {
               <p className="text-sm text-gray-600">
                 {isNewHighScore
                   ? 'Congratulations! You beat your previous best!'
-                  : 'Great effort! Keep playing to beat your high score.'}
+                  : 'Great effort! Starting a new round...'}
               </p>
             </div>
           </Card>
