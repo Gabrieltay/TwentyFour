@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { setGameScore, validateInitData } from '@/lib/telegram'
+import { setGameScore } from '@/lib/telegram'
 
 export async function POST(request: NextRequest) {
   let body: {
     score?: unknown
-    initData?: unknown
+    userId?: unknown
     chatId?: unknown
     messageId?: unknown
     inlineMessageId?: unknown
@@ -16,21 +16,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
   }
 
-  const { score, initData, chatId, messageId, inlineMessageId } = body
+  const { score, userId, chatId, messageId, inlineMessageId } = body
 
   if (typeof score !== 'number' || !Number.isFinite(score) || score <= 0) {
     return NextResponse.json({ error: 'Invalid score' }, { status: 400 })
   }
 
-  if (typeof initData !== 'string' || !initData) {
-    return NextResponse.json({ error: 'Missing Telegram initData' }, { status: 400 })
-  }
-
-  // initData is HMAC-signed by Telegram, so the user id it yields is trusted —
-  // the client never gets to claim a score on someone else's behalf.
-  const user = validateInitData(initData)
-  if (!user) {
-    return NextResponse.json({ error: 'Invalid Telegram session' }, { status: 401 })
+  if (typeof userId !== 'number' || !Number.isFinite(userId)) {
+    return NextResponse.json({ error: 'Missing or invalid userId' }, { status: 400 })
   }
 
   const hasInlineTarget = typeof inlineMessageId === 'string' && inlineMessageId.length > 0
@@ -46,7 +39,7 @@ export async function POST(request: NextRequest) {
   try {
     await setGameScore(
       {
-        userId: user.id,
+        userId,
         chatId: hasChatTarget ? (chatId as number) : undefined,
         messageId: hasChatTarget ? (messageId as number) : undefined,
         inlineMessageId: hasInlineTarget ? (inlineMessageId as string) : undefined,
