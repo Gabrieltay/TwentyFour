@@ -5,7 +5,10 @@ import Script from 'next/script'
 import { generateNumbers } from '@/lib/game'
 import { GameLogo } from '@/components/game-logo'
 import { HeaderSparkles } from '@/components/header-sparkles'
+import { LeaderboardCard } from '@/components/leaderboard-card'
 import { cn } from '@/lib/utils'
+import { telegramLeaderboardService } from '@/lib/telegram-leaderboard-service'
+import type { TelegramHighScore } from '@/lib/telegram'
 import {
   Trophy,
   Clock,
@@ -20,6 +23,7 @@ import {
   RotateCcw,
   Sparkle,
   Check,
+  Loader2,
   type LucideIcon,
 } from 'lucide-react'
 import { Toaster, toast } from 'sonner'
@@ -27,6 +31,7 @@ import { Toaster, toast } from 'sonner'
 type GameState = 'first' | 'second'
 
 interface PlayClientProps {
+  userId: number
   chatId?: number
   messageId?: number
   inlineMessageId?: string
@@ -74,6 +79,7 @@ function StatCard({
 }
 
 export function PlayClient({
+  userId,
   chatId,
   messageId,
   inlineMessageId,
@@ -98,6 +104,10 @@ export function PlayClient({
   const [showScoreBadge, setShowScoreBadge] = useState(false)
   const [finalScore, setFinalScore] = useState(0)
   const [isNewHighScore, setIsNewHighScore] = useState(false)
+  const [isSubmittingScore, setIsSubmittingScore] = useState(false)
+  const [leaderboardEntries, setLeaderboardEntries] = useState<TelegramHighScore[]>([])
+  const [isLeaderboardLoading, setIsLeaderboardLoading] = useState(false)
+  const [leaderboardError, setLeaderboardError] = useState<string | null>(null)
 
   useEffect(() => {
     if (window.Telegram?.WebApp) {
@@ -126,37 +136,45 @@ export function PlayClient({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  const loadLeaderboard = useCallback(async () => {
+    setIsLeaderboardLoading(true)
+    setLeaderboardError(null)
+    try {
+      const entries = await telegramLeaderboardService.getLeaderboard(userId, {
+        chatId,
+        messageId,
+        inlineMessageId,
+      })
+      setLeaderboardEntries(entries)
+    } catch (error) {
+      console.error('Failed to load leaderboard:', error)
+      setLeaderboardError('Could not load leaderboard.')
+    } finally {
+      setIsLeaderboardLoading(false)
+    }
+  }, [userId, chatId, messageId, inlineMessageId])
+
   const saveScore = useCallback(
     async (currentScore: number) => {
-      const initData = window.Telegram?.WebApp?.initData
-      if (!initData) {
-        console.error('Telegram initData unavailable, skipping score submission')
-        return
-      }
-
+      setIsSubmittingScore(true)
       try {
-        const response = await fetch('/api/telegram/score', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            score: currentScore,
-            initData,
-            chatId,
-            messageId,
-            inlineMessageId,
-          }),
+        await telegramLeaderboardService.submitScore(currentScore, {
+          chatId,
+          messageId,
+          inlineMessageId,
         })
-
-        if (!response.ok) {
-          const data = await response.json().catch(() => ({}))
-          throw new Error(data.error || 'Failed to submit score')
-        }
+        // Refresh so the just-submitted score is reflected in the list.
+        loadLeaderboard()
       } catch (error) {
+        // Submission failures are logged and surfaced via toast only — the
+        // game itself continues normally either way.
         console.error('Error submitting score to Telegram:', error)
         toast.error('⚠️ Failed to submit score to Telegram.', { duration: 3000 })
+      } finally {
+        setIsSubmittingScore(false)
       }
     },
-    [chatId, messageId, inlineMessageId]
+    [chatId, messageId, inlineMessageId, loadLeaderboard]
   )
 
   useEffect(() => {
@@ -290,9 +308,18 @@ export function PlayClient({
 
     if (isNewRecord) {
       setHighScore(score)
+    }
+    if (score > 0) {
       saveScore(score)
     }
   }
+
+  useEffect(() => {
+    if (showScoreBadge) {
+      loadLeaderboard()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showScoreBadge])
 
   const handlePlayAgain = () => {
     setShowScoreBadge(false)
@@ -491,7 +518,7 @@ export function PlayClient({
 
       {showScoreBadge && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="animate-in zoom-in-95 w-full max-w-sm space-y-4 rounded-3xl bg-white p-8 text-center shadow-xl duration-300">
+          <div className="animate-in zoom-in-95 max-h-[90dvh] w-full max-w-sm space-y-4 overflow-y-auto rounded-3xl bg-white p-8 text-center shadow-xl duration-300">
             {isNewHighScore && (
               <div className="flex justify-center">
                 <div className="flex h-20 w-20 animate-bounce items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-orange-500">
@@ -509,7 +536,19 @@ export function PlayClient({
               <p className="text-sm text-indigo-950/60">
                 {isNewHighScore ? 'Congratulations! You beat your previous best!' : 'Great effort!'}
               </p>
+              {isSubmittingScore && (
+                <div className="flex items-center justify-center gap-2 text-xs text-indigo-950/50">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  Saving score...
+                </div>
+              )}
             </div>
+            <LeaderboardCard
+              entries={leaderboardEntries}
+              currentUserId={userId}
+              isLoading={isLeaderboardLoading}
+              error={leaderboardError}
+            />
             <button
               onClick={handleShareScore}
               className="flex w-full items-center justify-center gap-2 rounded-2xl border border-indigo-100 bg-white py-3 font-semibold text-indigo-950 shadow-sm transition active:scale-[0.98]"

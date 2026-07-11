@@ -40,9 +40,14 @@ There is no database and no login system — Telegram is the only identity provi
 - `callback_query` with a matching `game_short_name` (i.e. the "Play" button was tapped) → `answerCallbackQuery` with a `url` pointing at `${NEXT_PUBLIC_APP_URL}/play` plus `user_id`, and either `chat_id`+`message_id` or `inline_message_id` depending on how the game message was sent.
 - Optionally verifies the `X-Telegram-Bot-Api-Secret-Token` header against `TELEGRAM_WEBHOOK_SECRET` if that env var is set.
 
-### Score submission
+### Score submission and leaderboard
 
-On game over, `play-client.tsx` POSTs to `src/app/api/telegram/score/route.ts` with the score and the Telegram WebApp SDK's `initData`. The route validates `initData`'s HMAC signature against `TELEGRAM_BOT_TOKEN` (see `validateInitData` in `src/lib/telegram.ts`) to get a trusted Telegram user id, then calls Telegram's `setGameScore`. There is no local persistence — Telegram's Games API is the only source of truth, and it already only updates a player's score if the new one is higher.
+The frontend never calls the Telegram Bot API directly (that would require exposing `TELEGRAM_BOT_TOKEN`). Instead `src/lib/telegram-leaderboard-service.ts` (`TelegramLeaderboardService`) wraps two API routes:
+
+- `POST /api/game/score` (`src/app/api/game/score/route.ts`): called from `play-client.tsx` on game over with the score and the Telegram WebApp SDK's `initData`. The route validates `initData`'s HMAC signature against `TELEGRAM_BOT_TOKEN` (see `validateInitData` in `src/lib/telegram.ts`) to get a trusted Telegram user id, then calls Telegram's `setGameScore`. Only scores greater than zero are submitted.
+- `GET /api/game/leaderboard` (`src/app/api/game/leaderboard/route.ts`): called from `play-client.tsx` after a game ends, and again after a score submission, to refresh the on-screen leaderboard (`src/components/leaderboard-card.tsx`). Wraps Telegram's `getGameHighScores`, which does **not** return the full leaderboard — only the requesting player, players near them, and the top scorers for that `chat_id`+`message_id`/`inline_message_id`. There's no Telegram API for a global cross-chat ranking.
+
+There is no local persistence — Telegram's Games API is the only source of truth, and it already only updates a player's score if the new one is higher.
 
 ### Telegram Web App SDK
 
