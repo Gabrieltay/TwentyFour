@@ -63,6 +63,7 @@ export default async function PlayPage({ searchParams }: PlayPageProps) {
 
   return (
     <PlayClient
+      userId={userId}
       chatId={chatId}
       messageId={messageId}
       inlineMessageId={inlineMessageId}

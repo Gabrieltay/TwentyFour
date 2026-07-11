@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
 
   const { score, initData, chatId, messageId, inlineMessageId } = body
 
-  if (typeof score !== 'number' || !Number.isFinite(score) || score < 0) {
+  if (typeof score !== 'number' || !Number.isFinite(score) || score <= 0) {
     return NextResponse.json({ error: 'Invalid score' }, { status: 400 })
   }
 
@@ -26,6 +26,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Missing Telegram initData' }, { status: 400 })
   }
 
+  // initData is HMAC-signed by Telegram, so the user id it yields is trusted —
+  // the client never gets to claim a score on someone else's behalf.
   const user = validateInitData(initData)
   if (!user) {
     return NextResponse.json({ error: 'Invalid Telegram session' }, { status: 401 })
