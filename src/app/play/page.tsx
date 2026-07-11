@@ -1,4 +1,6 @@
 import { getGameHighScores } from '@/lib/telegram'
+import { GameLogo } from '@/components/game-logo'
+import { HeaderSparkles } from '@/components/header-sparkles'
 import { PlayClient } from './play-client'
 
 const TELEGRAM_BOT_URL = 'https://t.me/TwentyFourGameBot'
@@ -14,16 +16,20 @@ interface PlayPageProps {
 
 function OpenInTelegram() {
   return (
-    <div className="h-[100dvh] flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-6 text-center">
-      <div className="max-w-sm space-y-4">
-        <h1 className="text-2xl font-bold text-gray-900">Open TwentyFour in Telegram</h1>
-        <p className="text-gray-600">
+    <div className="relative flex h-[100dvh] flex-col items-center justify-center gap-8 overflow-hidden bg-gradient-to-b from-[#241454] to-[#170c3a] p-6 text-center">
+      <HeaderSparkles />
+      <GameLogo className="relative z-10" />
+      <div className="relative z-10 max-w-sm space-y-4 rounded-3xl bg-[#F1EEFB] p-6">
+        <h1 className="font-display text-xl font-semibold text-indigo-950">
+          Open TwentyFour in Telegram
+        </h1>
+        <p className="text-sm text-indigo-950/60">
           This game only runs inside Telegram. Open the bot and tap the Play button on the game
           message to start.
         </p>
         <a
           href={TELEGRAM_BOT_URL}
-          className="inline-block px-5 py-3 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold shadow-lg"
+          className="inline-block w-full rounded-2xl bg-violet-600 py-3 font-semibold text-white shadow-[0_4px_0_0_#5b21b6] transition active:translate-y-[4px] active:shadow-none"
         >
           Open @TwentyFourGameBot
         </a>
