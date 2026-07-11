@@ -38,6 +38,7 @@ There is no database and no login system — Telegram is the only identity provi
 
 - `/start` → replies with `sendGame` using `TELEGRAM_GAME_SHORT_NAME`.
 - `callback_query` with a matching `game_short_name` (i.e. the "Play" button was tapped) → `answerCallbackQuery` with a `url` pointing at `${NEXT_PUBLIC_APP_URL}/play` plus `user_id`, and either `chat_id`+`message_id` or `inline_message_id` depending on how the game message was sent.
+- `inline_query` → `answerInlineQuery` with a single `InlineQueryResultGame` for `TELEGRAM_GAME_SHORT_NAME`. Required both for typing `@TwentyFourGameBot` directly into any chat (the only way to get a leaderboard shared across multiple players, since `getGameHighScores` is scoped per message and a private `/start` chat only ever has one participant) and for the in-game "Share Score" button (`TelegramGameProxy.shareScore()`), which won't produce a genuinely scoreable message without this — without it, Telegram still renders a cosmetic "via @Bot" card from cached BotFather game metadata, but `setGameScore`/`getGameHighScores` against it fail with `MESSAGE_ID_INVALID` since the message was never registered as a real inline result. Inline mode must also be enabled for the bot via BotFather (`/setinline`) for any of this to work.
 - Optionally verifies the `X-Telegram-Bot-Api-Secret-Token` header against `TELEGRAM_WEBHOOK_SECRET` if that env var is set.
 
 ### Score submission and leaderboard

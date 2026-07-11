@@ -16,6 +16,9 @@ interface TelegramUpdate {
       message_id: number
     }
   }
+  inline_query?: {
+    id: string
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -69,6 +72,16 @@ export async function POST(request: NextRequest) {
       // Acknowledge any other callback query so the client stops showing a loading spinner
       await callTelegramApi('answerCallbackQuery', {
         callback_query_id: update.callback_query.id,
+      })
+    } else if (update.inline_query) {
+      // Required for the in-game "Share Score" button and for typing
+      // "@TwentyFourGameBot" directly into a chat: Telegram sends an
+      // inline_query and expects an InlineQueryResultGame back before it
+      // will attach a real, scoreable inline message to the shared card.
+      await callTelegramApi('answerInlineQuery', {
+        inline_query_id: update.inline_query.id,
+        results: [{ type: 'game', id: 'twentyfour', game_short_name: gameShortName }],
+        cache_time: 0,
       })
     }
   } catch (error) {
