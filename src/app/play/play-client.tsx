@@ -20,16 +20,11 @@ import {
   RotateCcw,
   Sparkle,
   Check,
-  BookOpen,
-  Lightbulb,
-  BarChart3,
-  Settings as SettingsIcon,
   type LucideIcon,
 } from 'lucide-react'
 import { Toaster, toast } from 'sonner'
 
 type GameState = 'first' | 'second'
-type ModalKey = 'how-to-play' | 'tips' | 'stats'
 
 interface PlayClientProps {
   chatId?: number
@@ -78,60 +73,6 @@ function StatCard({
   )
 }
 
-function NavItem({
-  icon: Icon,
-  label,
-  onClick,
-}: {
-  icon: LucideIcon
-  label: string
-  onClick: () => void
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className="flex flex-col items-center gap-1 px-3 py-1 text-violet-300 transition active:scale-95 active:text-white"
-    >
-      <Icon className="h-5 w-5" />
-      <span className="text-[10px] font-semibold tracking-wide uppercase">{label}</span>
-    </button>
-  )
-}
-
-function InfoModal({
-  title,
-  onClose,
-  children,
-}: {
-  title: string
-  onClose: () => void
-  children: React.ReactNode
-}) {
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center sm:p-4"
-      onClick={onClose}
-    >
-      <div
-        className="animate-in slide-in-from-bottom w-full max-w-sm space-y-4 rounded-t-3xl bg-white p-6 shadow-xl duration-300 sm:rounded-3xl"
-        onClick={e => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between">
-          <h2 className="font-display text-lg font-semibold text-indigo-950">{title}</h2>
-          <button
-            onClick={onClose}
-            className="rounded-full p-1 text-indigo-950/40 active:bg-indigo-50"
-            aria-label="Close"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-        {children}
-      </div>
-    </div>
-  )
-}
-
 export function PlayClient({
   chatId,
   messageId,
@@ -157,7 +98,6 @@ export function PlayClient({
   const [showScoreBadge, setShowScoreBadge] = useState(false)
   const [finalScore, setFinalScore] = useState(0)
   const [isNewHighScore, setIsNewHighScore] = useState(false)
-  const [activeModal, setActiveModal] = useState<ModalKey | null>(null)
 
   useEffect(() => {
     if (window.Telegram?.WebApp) {
@@ -429,7 +369,7 @@ export function PlayClient({
       </div>
 
       <div className="relative z-10 -mt-4 flex-1 overflow-y-auto rounded-t-[32px] bg-[#F1EEFB]">
-        <div className="mx-auto max-w-md space-y-4 p-4 pb-6">
+        <div className="mx-auto max-w-md space-y-4 p-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
           <div className="grid grid-cols-3 gap-3">
             <StatCard
               icon={<Star className="h-3.5 w-3.5 text-violet-500" />}
@@ -546,71 +486,6 @@ export function PlayClient({
           </button>
         </div>
       </div>
-
-      <div className="shrink-0 border-t border-white/5 bg-[#1c1044] px-2 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
-        <div className="mx-auto flex max-w-md justify-around">
-          <NavItem
-            icon={BookOpen}
-            label="How to Play"
-            onClick={() => setActiveModal('how-to-play')}
-          />
-          <NavItem icon={Lightbulb} label="Tips" onClick={() => setActiveModal('tips')} />
-          <NavItem icon={BarChart3} label="Stats" onClick={() => setActiveModal('stats')} />
-          <NavItem
-            icon={SettingsIcon}
-            label="Settings"
-            onClick={() => toast('⚙️ Settings coming soon', { duration: 1500 })}
-          />
-        </div>
-      </div>
-
-      {activeModal === 'how-to-play' && (
-        <InfoModal title="How to Play" onClose={() => setActiveModal(null)}>
-          <div className="space-y-3 text-sm text-indigo-950/70">
-            <p>
-              Combine the four numbers using <strong>+</strong>, <strong>−</strong>,{' '}
-              <strong>×</strong>, and <strong>÷</strong> to make exactly <strong>24</strong>.
-            </p>
-            <ol className="list-decimal space-y-1 pl-5">
-              <li>Tap a number, then an operator, then a second number to combine them.</li>
-              <li>Keep combining until every number has been used.</li>
-              <li>Reach 24 to score a point and move on to the next puzzle.</li>
-            </ol>
-            <p>You have 3 skips and 5 minutes on the clock — use them wisely!</p>
-          </div>
-        </InfoModal>
-      )}
-
-      {activeModal === 'tips' && (
-        <InfoModal title="Tips" onClose={() => setActiveModal(null)}>
-          <ul className="space-y-2 text-sm text-indigo-950/70">
-            <li>💡 Look for pairs that multiply cleanly into 24, like 3×8 or 4×6.</li>
-            <li>💡 Division can turn awkward numbers into useful fractions.</li>
-            <li>💡 Stuck? Skip the puzzle instead of burning your timer trying to force it.</li>
-          </ul>
-        </InfoModal>
-      )}
-
-      {activeModal === 'stats' && (
-        <InfoModal title="Stats" onClose={() => setActiveModal(null)}>
-          <div className="grid grid-cols-3 gap-3 text-center">
-            <div>
-              <div className="font-display text-2xl font-semibold text-indigo-950">{score}</div>
-              <div className="text-xs text-indigo-950/50">Score</div>
-            </div>
-            <div>
-              <div className="font-display text-2xl font-semibold text-indigo-950">{highScore}</div>
-              <div className="text-xs text-indigo-950/50">Best</div>
-            </div>
-            <div>
-              <div className="font-display text-2xl font-semibold text-indigo-950">
-                {formatTime(timeLeft)}
-              </div>
-              <div className="text-xs text-indigo-950/50">Time Left</div>
-            </div>
-          </div>
-        </InfoModal>
-      )}
 
       {showScoreBadge && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
