@@ -238,11 +238,11 @@ export function PlayClient({
       setHighScore(score)
       saveScore(score)
     }
+  }
 
-    setTimeout(() => {
-      setShowScoreBadge(false)
-      startGame()
-    }, 3000)
+  const handlePlayAgain = () => {
+    setShowScoreBadge(false)
+    startGame()
   }
 
   const handleShareScore = () => {
@@ -433,9 +433,7 @@ export function PlayClient({
                 {finalScore}
               </div>
               <p className="text-sm text-gray-600">
-                {isNewHighScore
-                  ? 'Congratulations! You beat your previous best!'
-                  : 'Great effort! Starting a new round...'}
+                {isNewHighScore ? 'Congratulations! You beat your previous best!' : 'Great effort!'}
               </p>
             </div>
             <Button
@@ -445,6 +443,9 @@ export function PlayClient({
             >
               <Share2 className="h-4 w-4" />
               Share Score
+            </Button>
+            <Button onClick={handlePlayAgain} className="w-full">
+              Play Again
             </Button>
           </Card>
         </div>
