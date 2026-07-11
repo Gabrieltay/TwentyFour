@@ -158,7 +158,7 @@ export function PlayClient({
     async (currentScore: number) => {
       setIsSubmittingScore(true)
       try {
-        await telegramLeaderboardService.submitScore(currentScore, {
+        await telegramLeaderboardService.submitScore(currentScore, userId, {
           chatId,
           messageId,
           inlineMessageId,
@@ -174,7 +174,7 @@ export function PlayClient({
         setIsSubmittingScore(false)
       }
     },
-    [chatId, messageId, inlineMessageId, loadLeaderboard]
+    [userId, chatId, messageId, inlineMessageId, loadLeaderboard]
   )
 
   useEffect(() => {

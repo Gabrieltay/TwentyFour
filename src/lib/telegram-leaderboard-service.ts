@@ -16,16 +16,11 @@ async function parseErrorMessage(response: Response, fallback: string): Promise<
  * never talks to the Telegram Bot API directly (that requires the bot token).
  */
 class TelegramLeaderboardService {
-  async submitScore(score: number, target: LeaderboardTarget): Promise<void> {
-    const initData = window.Telegram?.WebApp?.initData
-    if (!initData) {
-      throw new Error('Telegram initData unavailable')
-    }
-
+  async submitScore(score: number, userId: number, target: LeaderboardTarget): Promise<void> {
     const response = await fetch('/api/game/score', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ score, initData, ...target }),
+      body: JSON.stringify({ score, userId, ...target }),
     })
 
     if (!response.ok) {

@@ -1,5 +1,3 @@
-import crypto from 'crypto'
-
 const TELEGRAM_API_BASE = 'https://api.telegram.org/bot'
 
 function getBotToken(): string {
@@ -59,45 +57,4 @@ export interface TelegramHighScore {
 
 export async function getGameHighScores(target: GameScoreTarget): Promise<TelegramHighScore[]> {
   return callTelegramApi<TelegramHighScore[]>('getGameHighScores', scoreTargetPayload(target))
-}
-
-interface TelegramWebAppUser {
-  id: number
-  first_name: string
-  last_name?: string
-  username?: string
-}
-
-/**
- * Validates initData from the Telegram WebApp JS SDK per
- * https://core.telegram.org/bots/webapps#validating-data-received-via-the-web-app
- * Returns the authenticated user if the signature checks out, otherwise null.
- */
-export function validateInitData(initData: string): TelegramWebAppUser | null {
-  const token = getBotToken()
-  const params = new URLSearchParams(initData)
-  const hash = params.get('hash')
-  if (!hash) return null
-  params.delete('hash')
-
-  const dataCheckString = Array.from(params.entries())
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([key, value]) => `${key}=${value}`)
-    .join('\n')
-
-  const secretKey = crypto.createHmac('sha256', 'WebAppData').update(token).digest()
-  const computedHash = crypto.createHmac('sha256', secretKey).update(dataCheckString).digest('hex')
-
-  if (computedHash.length !== hash.length) return null
-  const isValid = crypto.timingSafeEqual(Buffer.from(computedHash), Buffer.from(hash))
-  if (!isValid) return null
-
-  const userJson = params.get('user')
-  if (!userJson) return null
-
-  try {
-    return JSON.parse(userJson) as TelegramWebAppUser
-  } catch {
-    return null
-  }
 }
