@@ -354,7 +354,7 @@ export function PlayClient({
       <Script src="https://telegram.org/js/games.js" strategy="afterInteractive" />
       <Toaster position="top-center" richColors />
 
-      <div className="relative shrink-0 px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-8">
+      <div className="relative shrink-0 px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-6">
         <HeaderSparkles />
         <div className="relative z-10 flex items-center justify-between">
           <GameLogo />
@@ -368,9 +368,9 @@ export function PlayClient({
         </div>
       </div>
 
-      <div className="relative z-10 -mt-4 flex-1 overflow-y-auto rounded-t-[32px] bg-[#F1EEFB]">
-        <div className="mx-auto max-w-md space-y-4 p-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
-          <div className="grid grid-cols-3 gap-3">
+      <div className="relative z-10 -mt-4 flex-1 overflow-hidden rounded-t-[32px] bg-[#F1EEFB]">
+        <div className="mx-auto flex h-full max-w-md flex-col gap-2.5 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          <div className="grid shrink-0 grid-cols-3 gap-2.5">
             <StatCard
               icon={<Star className="h-3.5 w-3.5 text-violet-500" />}
               label="Score"
@@ -389,14 +389,14 @@ export function PlayClient({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid min-h-0 flex-1 grid-cols-2 grid-rows-2 gap-2.5">
             {numbers.map((num, index) => (
               <button
                 key={index}
                 onClick={() => handleNumberClick(index)}
                 disabled={num === null}
                 className={cn(
-                  'relative flex aspect-square items-center justify-center overflow-hidden rounded-[28px] font-display font-semibold text-white transition-all duration-150',
+                  'relative flex min-h-0 items-center justify-center overflow-hidden rounded-[28px] font-display font-semibold text-white transition-all duration-150',
                   TILE_STYLES[index].bg,
                   TILE_STYLES[index].bevel,
                   num === null && 'invisible',
@@ -410,7 +410,9 @@ export function PlayClient({
                   <span
                     className={cn(
                       '[text-shadow:0_2px_0_rgba(0,0,0,0.15)]',
-                      Number.isInteger(num) ? 'text-5xl' : 'text-3xl'
+                      Number.isInteger(num)
+                        ? 'text-[clamp(1.75rem,7dvh,3rem)]'
+                        : 'text-[clamp(1.125rem,4.5dvh,1.875rem)]'
                     )}
                   >
                     {toFraction(num)}
@@ -420,14 +422,14 @@ export function PlayClient({
             ))}
           </div>
 
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid shrink-0 grid-cols-4 gap-2">
             {OPERATORS.map(op => (
               <button
                 key={op.symbol}
                 onClick={() => handleOperatorClick(op.symbol)}
                 disabled={firstNumber === null}
                 className={cn(
-                  'flex flex-col items-center gap-1 rounded-2xl bg-white py-3 text-indigo-900 shadow-sm transition active:scale-95 disabled:opacity-40',
+                  'flex flex-col items-center gap-1 rounded-2xl bg-white py-2 text-indigo-900 shadow-sm transition active:scale-95 disabled:opacity-40',
                   selectedOperator === op.symbol && 'bg-violet-600 text-white'
                 )}
               >
@@ -437,11 +439,11 @@ export function PlayClient({
             ))}
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid shrink-0 grid-cols-2 gap-2.5">
             <button
               onClick={handleSkip}
               disabled={skipsLeft === 0}
-              className="flex items-center gap-3 rounded-2xl bg-white px-4 py-3 text-left shadow-sm transition active:scale-[0.98] disabled:opacity-50"
+              className="flex items-center gap-3 rounded-2xl bg-white px-4 py-2.5 text-left shadow-sm transition active:scale-[0.98] disabled:opacity-50"
             >
               <Sparkle className="h-5 w-5 shrink-0 text-violet-400" />
               <div className="min-w-0 flex-1">
@@ -464,7 +466,7 @@ export function PlayClient({
             </button>
             <button
               onClick={resetRound}
-              className="flex items-center gap-3 rounded-2xl bg-white px-4 py-3 text-left shadow-sm transition active:scale-[0.98]"
+              className="flex items-center gap-3 rounded-2xl bg-white px-4 py-2.5 text-left shadow-sm transition active:scale-[0.98]"
             >
               <RotateCcw className="h-5 w-5 shrink-0 text-violet-400" />
               <div>
@@ -476,7 +478,7 @@ export function PlayClient({
 
           <button
             onClick={endGame}
-            className="flex w-full items-center gap-3 rounded-2xl bg-rose-500 px-5 py-4 text-left text-white shadow-[0_5px_0_0_#9f1239] transition active:translate-y-[5px] active:shadow-none"
+            className="flex w-full shrink-0 items-center gap-3 rounded-2xl bg-rose-500 px-5 py-3 text-left text-white shadow-[0_5px_0_0_#9f1239] transition active:translate-y-[5px] active:shadow-none"
           >
             <Flag className="h-6 w-6 shrink-0" />
             <div>
