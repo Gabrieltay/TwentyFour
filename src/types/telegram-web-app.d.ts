@@ -9,10 +9,15 @@ export interface TelegramWebApp {
   offEvent: (eventType: string, callback: () => void) => void
 }
 
+export interface TelegramGameProxy {
+  shareScore: () => void
+}
+
 declare global {
   interface Window {
     Telegram?: {
       WebApp: TelegramWebApp
     }
+    TelegramGameProxy?: TelegramGameProxy
   }
 }
